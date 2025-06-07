@@ -187,6 +187,8 @@ function runAll () {
 
     collect('run', (sourceFile) => [sourceFile], entries)
 
+    collect('run-more', (sourceFile) => [sourceFile], entries)
+
     consume(entries)
 }
 
