@@ -298,3 +298,10 @@ void push::loopback (std::vector<uint8_t>& bytes, int64_t loopbackIndex) {
         0xE9, getByte<0>(delta), getByte<1>(delta), getByte<2>(delta), getByte<3>(delta)               // jmp with 32bit offset
     });
 }
+
+void writeOffset32 (std::vector<uint8_t>& bytes, uint64_t index, int32_t offset) {
+    bytes[index + 0] = getByte<0>(offset);
+    bytes[index + 1] = getByte<1>(offset);
+    bytes[index + 2] = getByte<2>(offset);
+    bytes[index + 3] = getByte<3>(offset);
+}

@@ -24,7 +24,12 @@ namespace bind::run {
 
 namespace part {
 
-    void run (const std::string& file, int32_t stackSize = 4096);
+    struct RunOptions {
+        int32_t stackSize;
+        bool optimize;
+    };
+
+    void run (const std::string& file, RunOptions runOptions = { 4096, true });
 
 }
 

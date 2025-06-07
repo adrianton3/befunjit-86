@@ -1,5 +1,6 @@
 #include "../core/alloc.h"
 #include "../core/generate.h"
+#include "../core/generateOpt.h"
 #include "../core/readPlayfield.h"
 
 #include "run.h"
@@ -66,7 +67,7 @@ int64_t bind::run::rand4 () {
     return std::rand() & 0x3;
 }
 
-void part::run (const std::string& file, int32_t stackSize) {
+void part::run (const std::string& file, RunOptions runOptions) {
     readPlayfield(file, playfield);
 
     int64_t stash[16];
@@ -83,7 +84,7 @@ void part::run (const std::string& file, int32_t stackSize) {
     };
 
     std::vector<int64_t> stack;
-    stack.resize(stackSize * 2, 0);
+    stack.resize(runOptions.stackSize * 2, 0);
     int64_t offset { 0 };
     stash[1] = offset;
 
@@ -101,11 +102,15 @@ void part::run (const std::string& file, int32_t stackSize) {
 
         std::vector<uint8_t> bytes;
 
-        generate(graph, staticBindings, bytes);
+        if (runOptions.optimize) {
+            generateOpt(graph, staticBindings, bytes);
+        } else {
+            generate(graph, staticBindings, bytes);
+        }
 
         uint8_t* code = alloc(bytes);
 
-        call(code, &stack[stackSize], offset);
+        call(code, &stack[runOptions.stackSize], offset);
 
         if (compileRequest) {
             dealloc(code, bytes.size());

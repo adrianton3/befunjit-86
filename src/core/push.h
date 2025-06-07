@@ -60,5 +60,6 @@ namespace push {
 
 }
 
+void writeOffset32 (std::vector<uint8_t>& bytes, uint64_t index, int32_t offset);
 
 #endif //PUSH_H

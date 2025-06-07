@@ -54,8 +54,8 @@ function runSpec (runFile, args, inputMaybe, doneOk, doneErr, doneRunaway) {
     }, 500)
 }
 
-function collect (sub, makeArgs, entries) {
-    entries.push(sub)
+function collect (name, sub, makeArgs, entries) {
+    entries.push(name)
 
     const allFileEntries = fs.readdirSync(path.join(import.meta.dirname, 'spec', sub), { withFileTypes: true })
 
@@ -113,14 +113,14 @@ function consume (entries) {
                 process.stdout.write('\n')
             }
 
-            process.stdout.write(chalk.bold(`${entry.padEnd(16, ' ')}\n`))
+            process.stdout.write(chalk.bold(`${entry.padEnd(20, ' ')}\n`))
             setImmediate(step)
             return
         }
 
         const inputMaybe = entry.inputFile == null ? null : fs.createReadStream(entry.inputFile)
 
-        process.stdout.write(`${entry.name.padEnd(16, ' ')}    `)
+        process.stdout.write(`${entry.name.padEnd(20, ' ')}    `)
 
         runSpec(
             '../cmake-build-debug/b86',
@@ -177,17 +177,23 @@ function consume (entries) {
 function runAll () {
     const entries = []
 
-    collect('read-playfield', (sourceFile) => ['read-playfield', sourceFile], entries)
+    collect('read-playfield', 'read-playfield', (sourceFile) => ['read-playfield', sourceFile], entries)
 
-    collect('find-pathlet', (sourceFile) => ['find-pathlet', sourceFile], entries)
+    collect('find-pathlet', 'find-pathlet', (sourceFile) => ['find-pathlet', sourceFile], entries)
 
-    collect('find-graph', (sourceFile) => ['find-graph', sourceFile], entries)
+    collect('find-graph', 'find-graph', (sourceFile) => ['find-graph', sourceFile], entries)
 
-    collect('run-line', (sourceFile) => ['run-line', sourceFile], entries)
+    collect('run-line (no-opt)', 'run-line', (sourceFile) => ['run-line', sourceFile], entries)
 
-    collect('run', (sourceFile) => [sourceFile], entries)
+    collect('run (no-opt)', 'run', (sourceFile) => ['--no-opt', sourceFile], entries)
 
-    collect('run-more', (sourceFile) => [sourceFile], entries)
+    collect('run (more specs, no-opt)', 'run-more', (sourceFile) => ['--no-opt', sourceFile], entries)
+
+    collect('run (run-line specs)', 'run-line', (sourceFile) => [sourceFile], entries)
+
+    collect('run', 'run', (sourceFile) => [sourceFile], entries)
+
+    collect('run (more specs)', 'run-more', (sourceFile) => [sourceFile], entries)
 
     consume(entries)
 }

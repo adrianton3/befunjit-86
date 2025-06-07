@@ -67,13 +67,6 @@ void generate (
     }
 }
 
-void writeOffset32 (std::vector<uint8_t>& bytes, uint64_t index, int32_t offset) {
-    bytes[index + 0] = getByte<0>(offset);
-    bytes[index + 1] = getByte<1>(offset);
-    bytes[index + 2] = getByte<2>(offset);
-    bytes[index + 3] = getByte<3>(offset);
-}
-
 void generate (Graph& graph, const StaticBindings& staticBindings, std::vector<uint8_t>& bytes) {
     std::vector<PathLink> pathLinks;
 
