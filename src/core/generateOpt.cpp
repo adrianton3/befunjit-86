@@ -11,7 +11,7 @@
 enum class InstrType : uint8_t {
     Push,
     Add, Sub, Mul, Div, Mod,
-    Not, Gt,
+    Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
     Get, Put,
     ReadInt64, ReadChar,
@@ -28,6 +28,9 @@ struct Mod {};
 
 struct Not {};
 struct Gt {};
+struct Gte {};
+struct Lt {};
+struct Lte {};
 
 struct Dup {};
 struct Swap {};
@@ -48,7 +51,7 @@ struct End {};
 typedef std::variant<
     Push,
     Add, Sub, Mul, Div, Mod,
-    Not, Gt,
+    Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
     Get, Put,
     ReadInt64, ReadChar,
@@ -238,6 +241,54 @@ uint64_t foldPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
     return rewriteCount;
 }
 
+void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
+    const auto indexMaxM0 = prev.size();
+    const auto indexMaxM1 = indexMaxM0 - 1;
+    const auto indexMaxM2 = indexMaxM0 - 2;
+    const auto indexMaxM3 = indexMaxM0 - 3;
+
+    size_t index = 0;
+
+    while (index < indexMaxM0) {
+        if (index < indexMaxM3) {
+            // ab\`!
+            // !(b>a)
+            // b<=a
+            // ab(>=)
+            if (matchesUnsafe(prev, index, InstrType::Swap, InstrType::Gt, InstrType::Not)) {
+                next.emplace_back(Gte {});
+                index += 3;
+                continue;
+            }
+        }
+
+        if (index < indexMaxM2) {
+            // ab\`
+            // b>a
+            // a<b
+            // ab(<)
+            if (matchesUnsafe(prev, index, InstrType::Swap, InstrType::Gt)) {
+                next.emplace_back(Lt {});
+                index += 2;
+                continue;
+            }
+
+            // ab`!
+            // !(a>b)
+            // a<=b
+            // ab(<=)
+            if (matchesUnsafe(prev, index, InstrType::Gt, InstrType::Not)) {
+                next.emplace_back(Lte {});
+                index += 2;
+                continue;
+            }
+        }
+
+        next.push_back(prev[index]);
+        index++;
+    }
+}
+
 void generateOpt (
     const Path& path,
     const StaticBindings& staticBindings,
@@ -263,10 +314,12 @@ void generateOpt (
 
     if (foldCount > 0) {
         std::vector<Instr> thirds;
-        foldPass(seconds, finals);
+        foldPass(seconds, thirds);
         // two passes should be enough
+
+        finalPass(thirds, finals);
     } else {
-        finals.insert(finals.end(), std::make_move_iterator(seconds.begin()), std::make_move_iterator(seconds.end()));
+        finalPass(seconds, finals);
     }
 
     for (const auto& instr : finals) {
@@ -283,6 +336,9 @@ void generateOpt (
 
             case InstrType::Not: push::not_(bytes); break;
             case InstrType::Gt: push::gt(bytes); break;
+            case InstrType::Gte: push::gte(bytes); break;
+            case InstrType::Lt: push::lt(bytes); break;
+            case InstrType::Lte: push::lte(bytes); break;
 
             case InstrType::Dup: push::dup(bytes); break;
             case InstrType::Swap: push::swap(bytes); break;

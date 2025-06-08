@@ -34,6 +34,12 @@ namespace push {
 
     void gt (std::vector<uint8_t>& bytes);
 
+    void gte (std::vector<uint8_t>& bytes);
+
+    void lt (std::vector<uint8_t>& bytes);
+
+    void lte (std::vector<uint8_t>& bytes);
+
     void dup (std::vector<uint8_t>& bytes);
 
     void swap (std::vector<uint8_t>& bytes);

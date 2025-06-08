@@ -96,6 +96,42 @@ void push::not_ (std::vector<uint8_t>& bytes) {
     });
 }
 
+void push::gte (std::vector<uint8_t>& bytes) {
+    bytes.insert(bytes.end(), {
+        0x48, 0x8b, 0x4c, 0xf7, 0xf8,              // mov rcx, [rdi + rsi * 8 - 8]
+        0x48, 0x8b, 0x54, 0xf7, 0xf0,              // mov rdx, [rdi + rsi * 8 - 16]
+        0x48, 0xff, 0xce,                          // dec rsi
+        0x31, 0xc0,                                // xor eax, eax
+        0x48, 0x39, 0xca,                          // cmp rdx, rcx
+        0x0f, 0x9d, 0xc0,                          // setge al
+        0x48, 0x89, 0x44, 0xf7, 0xf8               // mov qword [rdi + rsi * 8 - 8], rax
+    });
+}
+
+void push::lt (std::vector<uint8_t>& bytes) {
+    bytes.insert(bytes.end(), {
+        0x48, 0x8b, 0x4c, 0xf7, 0xf8,              // mov rcx, [rdi + rsi * 8 - 8]
+        0x48, 0x8b, 0x54, 0xf7, 0xf0,              // mov rdx, [rdi + rsi * 8 - 16]
+        0x48, 0xff, 0xce,                          // dec rsi
+        0x31, 0xc0,                                // xor eax, eax
+        0x48, 0x39, 0xca,                          // cmp rdx, rcx
+        0x0f, 0x9c, 0xc0,                          // setl al
+        0x48, 0x89, 0x44, 0xf7, 0xf8               // mov qword [rdi + rsi * 8 - 8], rax
+    });
+}
+
+void push::lte (std::vector<uint8_t>& bytes) {
+    bytes.insert(bytes.end(), {
+        0x48, 0x8b, 0x4c, 0xf7, 0xf8,              // mov rcx, [rdi + rsi * 8 - 8]
+        0x48, 0x8b, 0x54, 0xf7, 0xf0,              // mov rdx, [rdi + rsi * 8 - 16]
+        0x48, 0xff, 0xce,                          // dec rsi
+        0x31, 0xc0,                                // xor eax, eax
+        0x48, 0x39, 0xca,                          // cmp rdx, rcx
+        0x0f, 0x9e, 0xc0,                          // setle al
+        0x48, 0x89, 0x44, 0xf7, 0xf8               // mov qword [rdi + rsi * 8 - 8], rax
+    });
+}
+
 void push::dup (std::vector<uint8_t>& bytes) {
     bytes.insert(bytes.end(), {
         0x48, 0x8b, 0x44, 0xf7, 0xf8,              // mov rax, [rdi + rsi * 8 - 8]
