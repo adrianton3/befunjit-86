@@ -1,3 +1,4 @@
+#include <bit>
 #include <utility>
 
 #include "Path.h"
@@ -52,6 +53,89 @@ void push::mul (std::vector<uint8_t>& bytes) {
         0x48, 0x89, 0x44, 0xf7, 0xf0,              // mov [rdi + rsi * 8 - 16], rax
         0x48, 0xff, 0xce                           // dec rsi
     });
+}
+
+void push::mul1 (std::vector<uint8_t>& bytes, int64_t value) {
+    if (value == -1) {
+        bytes.insert(bytes.end(), {
+            0x48, 0xf7, 0x5c, 0xf7, 0xf8           // neg [rdi + rsi * 8 - 8]
+        });
+        return;
+    }
+
+    if (value == 0) {
+        // keep this case separate since the pot test accepts 0
+        bytes.insert(bytes.end(), {
+            0x48, 0xc7, 0x44, 0xf7, 0xf8, 0x00, 0x00, 0x00, 0x00 // mov [rdi + rsi * 8 - 8], 0
+        });
+        return;
+    }
+
+    if (value == 1) {
+        // nothing
+        return;
+    }
+
+    if (value == 2) {
+        bytes.insert(bytes.end(), {
+            0x48, 0xd1, 0x64, 0xf7, 0xf8           // shl
+        });
+        return;
+    }
+
+    if (value == 3) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x8b, 0x44, 0xf7, 0xf8,          // mov rax, [rdi + rsi * 8 - 8]
+            0x48, 0x8d, 0x04, 0x40,                // lea rax, [rax + rax * 2]
+            0x48, 0x89, 0x44, 0xf7, 0xf8,          // mov [rdi + rsi * 8 - 8], rax
+        });
+        return;
+    }
+
+    if (value == 5) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x8b, 0x44, 0xf7, 0xf8,          // mov rax, [rdi + rsi * 8 - 8]
+            0x48, 0x8d, 0x04, 0x80,                // lea rax, [rax + rax * 4]
+            0x48, 0x89, 0x44, 0xf7, 0xf8,          // mov [rdi + rsi * 8 - 8], rax
+        });
+        return;
+    }
+
+    if ((value & (value - 1)) == 0) {
+        // powers of two (positive only)
+        const auto shift = std::bit_width(static_cast<uint64_t>(value)) - 1;
+        bytes.insert(bytes.end(), {
+            0x48, 0xc1, 0x64, 0xf7, 0xf8, static_cast<uint8_t>(shift) // shl [rdi + rsi * 8 - 8], log2(value)
+        });
+        return;
+    }
+
+    if (std::in_range<std::int8_t>(value)) [[likely]] {
+        bytes.insert(bytes.end(), {
+            0x48, 0x6b, 0x54, 0xf7, 0xf8, getByte<0>(value), // imul rdx, [rdi + rsi * 8 - 8], 8bit
+            0x48, 0x89, 0x54, 0xf7, 0xf8           // mov [rdi + rsi * 8 - 8], rdx
+        });
+        return;
+    }
+
+    if (std::in_range<std::int32_t>(value)) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x69, 0x54, 0xf7, 0xf8, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value), // imul, rdx, [rdi + rsi * 8 + 8], 32bit
+            0x48, 0x89, 0x54, 0xf7, 0xf8,          // mov [rdi + rsi * 8 - 8], rdx
+        });
+        return;
+    }
+
+    // it would take quite a few fold passes to accumulate such a large number in a cell
+    // but this bit of code doesn't know that
+    if (std::in_range<std::int64_t>(value)) {
+        bytes.insert(bytes.end(), {
+            0x48, 0xb8, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value), getByte<4>(value), getByte<5>(value), getByte<6>(value), getByte<7>(value),  // mov rax, 64bit
+            0x48, 0x0f, 0xaf, 0x44, 0xf7, 0xf8,    // imul rax, [rdi + rsi * 8 - 8]
+            0x48, 0x89, 0x44, 0xf7, 0xf8,          // mov [rdi + rsi * 8 - 8], rax
+        });
+        return;
+    }
 }
 
 void push::div (std::vector<uint8_t>& bytes) {

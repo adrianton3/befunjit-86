@@ -10,7 +10,7 @@
 
 enum class InstrType : uint8_t {
     Push,
-    Add, Sub, Mul, Div, Mod,
+    Add, Sub, Mul, Mul1, Div, Mod,
     Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
     Get, Put,
@@ -23,6 +23,7 @@ struct Push { int64_t value; };
 struct Add {};
 struct Sub {};
 struct Mul {};
+struct Mul1 { int64_t value; };
 struct Div {};
 struct Mod {};
 
@@ -50,7 +51,7 @@ struct End {};
 
 typedef std::variant<
     Push,
-    Add, Sub, Mul, Div, Mod,
+    Add, Sub, Mul, Mul1, Div, Mod,
     Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
     Get, Put,
@@ -120,7 +121,6 @@ int64_t getPushValue (Instr push) {
 
 uint64_t foldPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
     const auto indexMaxM0 = prev.size();
-    const auto indexMaxM1 = indexMaxM0 - 1;
     const auto indexMaxM2 = indexMaxM0 - 2;
     const auto indexMaxM3 = indexMaxM0 - 3;
     const auto indexMaxM4 = indexMaxM0 - 4;
@@ -243,7 +243,6 @@ uint64_t foldPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
 
 void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
     const auto indexMaxM0 = prev.size();
-    const auto indexMaxM1 = indexMaxM0 - 1;
     const auto indexMaxM2 = indexMaxM0 - 2;
     const auto indexMaxM3 = indexMaxM0 - 3;
 
@@ -263,6 +262,12 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
         }
 
         if (index < indexMaxM2) {
+            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Mul)) {
+                next.emplace_back(Mul1 { getPushValue(prev[index + 0]) });
+                index += 2;
+                continue;
+            }
+
             // ab\`
             // b>a
             // a<b
@@ -331,6 +336,7 @@ void generateOpt (
             case InstrType::Add: push::add(bytes); break;
             case InstrType::Sub: push::sub(bytes); break;
             case InstrType::Mul: push::mul(bytes); break;
+            case InstrType::Mul1: push::mul1(bytes, std::get<Mul1>(instr).value); break;
             case InstrType::Div: push::div(bytes); break;
             case InstrType::Mod: push::mod(bytes); break;
 

@@ -26,6 +26,8 @@ namespace push {
 
     void mul (std::vector<uint8_t>& bytes);
 
+    void mul1 (std::vector<uint8_t>& bytes, int64_t value);
+
     void div (std::vector<uint8_t>& bytes);
 
     void mod (std::vector<uint8_t>& bytes);
