@@ -85,8 +85,8 @@ void translatePass (const std::vector<PathletEntry>& prev, std::vector<Instr>& n
             case 'p': next.emplace_back(Put { entry.cursor }); break;
             case '.': next.emplace_back(WriteInt64 {}); break;
             case ',': next.emplace_back(WriteChar {}); break;
-            case '~': next.emplace_back(ReadInt64 {}); break;
-            case '&': next.emplace_back(ReadChar {}); break;
+            case '&': next.emplace_back(ReadInt64 {}); break;
+            case '~': next.emplace_back(ReadChar {}); break;
             case '_': [[fallthrough]];
             case '|': next.emplace_back(If {}); break;
             case '?': next.emplace_back(Rand {}); break;

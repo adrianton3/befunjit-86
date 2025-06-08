@@ -48,8 +48,8 @@ void generate (
             case '.': push::write(bytes, staticBindings.stash, staticBindings.writeInt64); break;
             case ',': push::write(bytes, staticBindings.stash, staticBindings.writeChar); break;
 
-            case '~': push::read(bytes, staticBindings.stash, staticBindings.readInt64); break;
-            case '&': push::read(bytes, staticBindings.stash, staticBindings.readChar); break;
+            case '&': push::read(bytes, staticBindings.stash, staticBindings.readInt64); break;
+            case '~': push::read(bytes, staticBindings.stash, staticBindings.readChar); break;
 
             case '_': [[fallthrough]];
             case '|': push::if_(bytes, path, pathLinks); break;
