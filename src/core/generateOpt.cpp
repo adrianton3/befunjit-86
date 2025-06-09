@@ -10,7 +10,7 @@
 
 enum class InstrType : uint8_t {
     Push,
-    Add, Sub, Mul, Mul1, Div, Mod,
+    Add, Sub, SubRev, Mul, Mul1, Div, Mod,
     Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
     Get, Get2, Put, Put2,
@@ -22,6 +22,7 @@ enum class InstrType : uint8_t {
 struct Push { int64_t value; };
 struct Add {};
 struct Sub {};
+struct SubRev {};
 struct Mul {};
 struct Mul1 { int64_t value; };
 struct Div {};
@@ -53,7 +54,7 @@ struct End {};
 
 typedef std::variant<
     Push,
-    Add, Sub, Mul, Mul1, Div, Mod,
+    Add, Sub, SubRev, Mul, Mul1, Div, Mod,
     Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
     Get, Get2, Put, Put2,
@@ -301,6 +302,12 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                 index += 2;
                 continue;
             }
+
+            if (matchesUnsafe(prev, index, InstrType::Swap, InstrType::Sub)) {
+                next.emplace_back(SubRev {});
+                index += 2;
+                continue;
+            }
         }
 
         next.push_back(prev[index]);
@@ -350,6 +357,7 @@ void generateOpt (
 
             case InstrType::Add: push::add(bytes); break;
             case InstrType::Sub: push::sub(bytes); break;
+            case InstrType::SubRev: push::subRev(bytes); break;
             case InstrType::Mul: push::mul(bytes); break;
             case InstrType::Mul1: push::mul1(bytes, std::get<Mul1>(instr).value); break;
             case InstrType::Div: push::div(bytes); break;

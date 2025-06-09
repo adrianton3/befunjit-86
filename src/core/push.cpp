@@ -46,6 +46,15 @@ void push::sub (std::vector<uint8_t>& bytes) {
     });
 }
 
+void push::subRev (std::vector<uint8_t>& bytes) {
+    bytes.insert(bytes.end(), {
+        0x48, 0x8b, 0x44, 0xf7, 0xf8,              // mov rax, [rdi + rsi * 8 - 8]
+        0x48, 0x2b, 0x44, 0xf7, 0xf0,              // sub rax, [rdi + rsi * 8 - 16]
+        0x48, 0x89, 0x44, 0xf7, 0xf0,              // mov [rdi + rsi * 8 - 16], rax
+        0x48, 0xff, 0xce                           // dec rsi
+    });
+}
+
 void push::mul (std::vector<uint8_t>& bytes) {
     bytes.insert(bytes.end(), {
         0x48, 0x8b, 0x44, 0xf7, 0xf8,              // mov rax, [rdi + rsi * 8 - 8]
