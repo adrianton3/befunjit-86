@@ -274,7 +274,7 @@ void push::get2 (std::vector<uint8_t>& bytes, int64_t const* playfieldData, uint
 
     bytes.insert(bytes.end(), {
         0x48, 0xb8, getByte<0>(playfieldDataAddress), getByte<1>(playfieldDataAddress), getByte<2>(playfieldDataAddress), getByte<3>(playfieldDataAddress), getByte<4>(playfieldDataAddress), getByte<5>(playfieldDataAddress), getByte<6>(playfieldDataAddress), getByte<7>(playfieldDataAddress), // mov rax, playfieldDataAddress
-        0x48, 0x8b, 0x90, getByte<0>(offsetFlat), getByte<1>(offsetFlat), getByte<2>(offsetFlat), getByte<3>(offsetFlat), // mov rdx, [rax + indexFlat]
+        0x48, 0x8b, 0x90, getByte<0>(offsetFlat), getByte<1>(offsetFlat), getByte<2>(offsetFlat), getByte<3>(offsetFlat), // mov rdx, [rax + offsetFlat]
         0x48, 0x89, 0x14, 0xf7,                    // mov [rdi + rsi * 8 - 8], rdx
         0x48, 0xff, 0xc6,                          // inc rsi
     });
@@ -310,6 +310,44 @@ void push::put (std::vector<uint8_t>& bytes, int64_t const* stash, Fun14 put, co
         0x48, 0xb9, getByte<0>(stashAddress), getByte<1>(stashAddress), getByte<2>(stashAddress), getByte<3>(stashAddress), getByte<4>(stashAddress), getByte<5>(stashAddress), getByte<6>(stashAddress), getByte<7>(stashAddress), // mov rcx, stashAddress
         0x48, 0x8b, 0x39,                          // mov rdi, [rcx]
         0x48, 0x8b, 0x71, 0x08,                    // mov rsi, [rcx + 8]
+    });
+}
+
+void push::put2Recomp (std::vector<uint8_t>& bytes, int64_t const* stash, Fun14 put, uint8_t x, uint8_t y, const Cursor& cursor) { // FunV4
+    const auto stashAddress = reinterpret_cast<uint64_t>(stash);
+    const auto putAddress = reinterpret_cast<uint64_t>(put);
+    const auto cursorPacked = pack(cursor);
+
+    bytes.insert(bytes.end(), {
+        0x48, 0xff, 0xce,                          // dec rsi
+
+        0x48, 0xb8, getByte<0>(stashAddress), getByte<1>(stashAddress), getByte<2>(stashAddress), getByte<3>(stashAddress), getByte<4>(stashAddress), getByte<5>(stashAddress), getByte<6>(stashAddress), getByte<7>(stashAddress), // mov rax, stashAddress
+        0x48, 0x89, 0x38,                          // mov [rax], rdi
+        0x48, 0x89, 0x70, 0x08,                    // mov [rax + 8], rsi
+
+        0x48, 0x8b, 0x14, 0xf7,                    // mov rdx, [rdi + rsi * 8]
+        0xb9, getByte<0>(cursorPacked), getByte<1>(cursorPacked), getByte<2>(cursorPacked), getByte<3>(cursorPacked), // mov rcx, cursor-packed
+
+        0xbf, getByte<0>(x), 0x00, 0x00, 0x00,     // mov edi, x
+        0xbe, getByte<0>(y), 0x00, 0x00, 0x00,     // mov esi, y
+
+        0x48, 0xb8, getByte<0>(putAddress), getByte<1>(putAddress), getByte<2>(putAddress), getByte<3>(putAddress), getByte<4>(putAddress), getByte<5>(putAddress), getByte<6>(putAddress), getByte<7>(putAddress), // mov rax, putAddress
+        0xff, 0xd0,                                // call rax
+
+        0x59,                                      // pop rcx as a counter to the push in init
+        0xc3,                                      // ret
+    });
+}
+
+void push::put2NoRecomp (std::vector<uint8_t>& bytes, int64_t const* playfieldData, uint64_t indexFlat) {
+    const auto playfieldDataAddress = reinterpret_cast<uint64_t>(playfieldData);
+    const auto offsetFlat = indexFlat * 8;
+
+    bytes.insert(bytes.end(), {
+        0x48, 0xb8, getByte<0>(playfieldDataAddress), getByte<1>(playfieldDataAddress), getByte<2>(playfieldDataAddress), getByte<3>(playfieldDataAddress), getByte<4>(playfieldDataAddress), getByte<5>(playfieldDataAddress), getByte<6>(playfieldDataAddress), getByte<7>(playfieldDataAddress), // mov rax, playfieldDataAddress
+        0x48, 0x8b, 0x54, 0xf7, 0xf8, // mov rdx, [rdi + rsi * 8 - 8]
+        0x48, 0x89, 0x90, getByte<0>(offsetFlat), getByte<1>(offsetFlat), getByte<2>(offsetFlat), getByte<3>(offsetFlat), // mov [rax + offsetFlat], rdx
+        0x48, 0xff, 0xce, // dec rsi
     });
 }
 

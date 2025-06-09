@@ -4,9 +4,9 @@
 #include "Graph.h"
 
 
-void generateOpt (const Path& path, const StaticBindings& staticBindings, std::vector<uint8_t>& bytes, std::vector<PathLink>& pathLinks);
+void generateOpt (const Path&, const StaticBindings&, const Boolfield&, std::vector<uint8_t>&, std::vector<PathLink>&);
 
-void generateOpt (Graph& graph, const StaticBindings& staticBindings, std::vector<uint8_t>& bytes);
+void generateOpt (Graph&, const StaticBindings&, const Boolfield&, std::vector<uint8_t>&);
 
 
 #endif //GENERATEOPT_H

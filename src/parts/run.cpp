@@ -104,12 +104,18 @@ void part::run (const std::string& file, RunOptions runOptions) {
         std::vector<uint8_t> bytes;
 
         if (runOptions.optimize) {
-            generateOpt(graph, staticBindings, bytes);
+            generateOpt(graph, staticBindings, boolfield, bytes);
         } else {
             generate(graph, staticBindings, bytes);
         }
 
         uint8_t* code = alloc(bytes);
+
+        // {
+        //     FILE* fd = fopen("binary", "wb");
+        //     fwrite(code, 1, bytes.size(), fd);
+        //     fclose(fd);
+        // }
 
         call(code, &stack[runOptions.stackSize], offset);
 

@@ -54,6 +54,10 @@ namespace push {
 
     void put (std::vector<uint8_t>& bytes, int64_t const* stash, Fun14 put, const Cursor& cursor); // FunV4
 
+    void put2Recomp (std::vector<uint8_t>& bytes, int64_t const* stash, Fun14 put, uint8_t x, uint8_t y, const Cursor& cursor); // FunV4
+
+    void put2NoRecomp (std::vector<uint8_t>& bytes, int64_t const* playfieldData, uint64_t indexFlat);
+
     void read (std::vector<uint8_t>& bytes, int64_t const* stash, Fun10 read);
 
     void write (std::vector<uint8_t>& bytes, int64_t const* stash, Fun11 write);

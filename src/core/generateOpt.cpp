@@ -13,7 +13,7 @@ enum class InstrType : uint8_t {
     Add, Sub, Mul, Mul1, Div, Mod,
     Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
-    Get, Get2, Put,
+    Get, Get2, Put, Put2,
     ReadInt64, ReadChar,
     WriteInt64, WriteChar,
     If, Rand, End
@@ -40,6 +40,7 @@ struct Drop {};
 struct Get {};
 struct Get2 { int64_t x; int64_t y; };
 struct Put { Cursor cursor; };
+struct Put2 { int64_t x; int64_t y; Cursor cursor; };
 
 struct ReadInt64 {};
 struct ReadChar {};
@@ -55,7 +56,7 @@ typedef std::variant<
     Add, Sub, Mul, Mul1, Div, Mod,
     Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
-    Get, Get2, Put,
+    Get, Get2, Put, Put2,
     ReadInt64, ReadChar,
     WriteInt64, WriteChar,
     If, Rand, End
@@ -266,6 +267,12 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                 index += 3;
                 continue;
             }
+
+            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Push, InstrType::Put)) {
+                next.emplace_back(Put2 { getPushValue(prev[index + 0]), getPushValue(prev[index + 1]), std::get<Put>(prev[index + 2]).cursor });
+                index += 3;
+                continue;
+            }
         }
 
         if (index < indexMaxM2) {
@@ -304,6 +311,7 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
 void generateOpt (
     const Path& path,
     const StaticBindings& staticBindings,
+    const Boolfield& boolfield,
     std::vector<uint8_t>& bytes,
     std::vector<PathLink>& pathLinks
 ) {
@@ -371,6 +379,21 @@ void generateOpt (
             }
 
             case InstrType::Put: push::put(bytes, staticBindings.stash, staticBindings.put, std::get<Put>(instr).cursor); break;
+            case InstrType::Put2: {
+                const auto [x, y, cursor] = std::get<Put2>(instr);
+
+                if (Playfield::isWithinBounds(x, y)) {
+                    if (boolfield.getAtUnsafe(x, y)) {
+                        push::put2Recomp(bytes, staticBindings.stash, staticBindings.put, x, y, cursor);
+                    } else {
+                        push::put2NoRecomp(bytes, staticBindings.playfieldData, y * Playfield::width + x);
+                    }
+                } else {
+                    push::drop(bytes);
+                }
+
+                break;
+            }
 
             case InstrType::ReadInt64: push::read(bytes, staticBindings.stash, staticBindings.readInt64); break;
             case InstrType::ReadChar: push::read(bytes, staticBindings.stash, staticBindings.readChar); break;
@@ -386,7 +409,7 @@ void generateOpt (
     }
 }
 
-void generateOpt (Graph& graph, const StaticBindings& staticBindings, std::vector<uint8_t>& bytes) {
+void generateOpt (Graph& graph, const StaticBindings& staticBindings, const Boolfield& boolfield, std::vector<uint8_t>& bytes) {
     std::vector<PathLink> pathLinks;
 
     push::init(bytes);
@@ -397,7 +420,7 @@ void generateOpt (Graph& graph, const StaticBindings& staticBindings, std::vecto
     for (auto& entry : graph.map) {
         auto& path = entry.second;
         path->startIndex = bytes.size();
-        generateOpt(*path, staticBindings, bytes, pathLinks);
+        generateOpt(*path, staticBindings, boolfield, bytes, pathLinks);
     }
 
     for (const auto& pathLink : pathLinks) {
