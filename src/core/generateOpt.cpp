@@ -13,7 +13,7 @@ enum class InstrType : uint8_t {
     Add, Sub, Mul, Mul1, Div, Mod,
     Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
-    Get, Put,
+    Get, Get2, Put,
     ReadInt64, ReadChar,
     WriteInt64, WriteChar,
     If, Rand, End
@@ -38,6 +38,7 @@ struct Swap {};
 struct Drop {};
 
 struct Get {};
+struct Get2 { int64_t x; int64_t y; };
 struct Put { Cursor cursor; };
 
 struct ReadInt64 {};
@@ -54,7 +55,7 @@ typedef std::variant<
     Add, Sub, Mul, Mul1, Div, Mod,
     Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
-    Get, Put,
+    Get, Get2, Put,
     ReadInt64, ReadChar,
     WriteInt64, WriteChar,
     If, Rand, End
@@ -259,6 +260,12 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                 index += 3;
                 continue;
             }
+
+            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Push, InstrType::Get)) {
+                next.emplace_back(Get2 { getPushValue(prev[index + 0]), getPushValue(prev[index + 1]) });
+                index += 3;
+                continue;
+            }
         }
 
         if (index < indexMaxM2) {
@@ -351,6 +358,18 @@ void generateOpt (
             case InstrType::Drop: push::drop(bytes); break;
 
             case InstrType::Get: push::get(bytes, staticBindings.stash, staticBindings.get); break;
+            case InstrType::Get2: {
+                const auto [x, y] = std::get<Get2>(instr);
+
+                if (Playfield::isWithinBounds(x, y)) {
+                    push::get2(bytes, staticBindings.playfieldData, y * Playfield::width + x);
+                } else {
+                    push::value(bytes, 0);
+                }
+
+                break;
+            }
+
             case InstrType::Put: push::put(bytes, staticBindings.stash, staticBindings.put, std::get<Put>(instr).cursor); break;
 
             case InstrType::ReadInt64: push::read(bytes, staticBindings.stash, staticBindings.readInt64); break;

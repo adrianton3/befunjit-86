@@ -50,6 +50,8 @@ namespace push {
 
     void get (std::vector<uint8_t>& bytes, int64_t const* stash, Fun12 get);
 
+    void get2 (std::vector<uint8_t>& bytes, int64_t const* playfieldData, uint64_t indexFlat);
+
     void put (std::vector<uint8_t>& bytes, int64_t const* stash, Fun14 put, const Cursor& cursor); // FunV4
 
     void read (std::vector<uint8_t>& bytes, int64_t const* stash, Fun10 read);

@@ -268,6 +268,18 @@ void push::get (std::vector<uint8_t>& bytes, int64_t const* stash, Fun12 get) {
     });
 }
 
+void push::get2 (std::vector<uint8_t>& bytes, int64_t const* playfieldData, uint64_t indexFlat) {
+    const auto playfieldDataAddress = reinterpret_cast<uint64_t>(playfieldData);
+    const auto offsetFlat = indexFlat * 8;
+
+    bytes.insert(bytes.end(), {
+        0x48, 0xb8, getByte<0>(playfieldDataAddress), getByte<1>(playfieldDataAddress), getByte<2>(playfieldDataAddress), getByte<3>(playfieldDataAddress), getByte<4>(playfieldDataAddress), getByte<5>(playfieldDataAddress), getByte<6>(playfieldDataAddress), getByte<7>(playfieldDataAddress), // mov rax, playfieldDataAddress
+        0x48, 0x8b, 0x90, getByte<0>(offsetFlat), getByte<1>(offsetFlat), getByte<2>(offsetFlat), getByte<3>(offsetFlat), // mov rdx, [rax + indexFlat]
+        0x48, 0x89, 0x14, 0xf7,                    // mov [rdi + rsi * 8 - 8], rdx
+        0x48, 0xff, 0xc6,                          // inc rsi
+    });
+}
+
 void push::put (std::vector<uint8_t>& bytes, int64_t const* stash, Fun14 put, const Cursor& cursor) { // FunV4
     const auto stashAddress = reinterpret_cast<uint64_t>(stash);
     const auto putAddress = reinterpret_cast<uint64_t>(put);

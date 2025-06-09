@@ -14,6 +14,7 @@ typedef int64_t (*Fun14)(int64_t, int64_t, int64_t, ino64_t); // put
 
 struct StaticBindings {
     int64_t* stash;
+    int64_t* playfieldData;
     Fun12 get;
     Fun14 put;
     Fun10 readInt64;

@@ -86,6 +86,7 @@ void part::runLine (const std::string& fileName) {
 
     StaticBindings staticBindings {
         stash,
+        nullptr,
         bind::runLine::get,
         bind::runLine::put,
         bind::runLine::readInt64,

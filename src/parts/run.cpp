@@ -74,6 +74,7 @@ void part::run (const std::string& file, RunOptions runOptions) {
 
     StaticBindings staticBindings {
         stash,
+        playfield.getData(),
         bind::run::get,
         bind::run::put,
         bind::run::readInt64,
