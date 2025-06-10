@@ -101,7 +101,7 @@ int main (int argc, char** argv) {
         " %s find-pathlet <bf-file>\n"
         " %s find-graph <bf-file>\n"
         " %s run-line <bf-file>\n",
-        argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0]
+        argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0]
     );
     return 1;
 }
