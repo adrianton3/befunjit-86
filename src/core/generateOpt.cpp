@@ -8,8 +8,9 @@
 struct InstrStringifier {
     std::string operator() (const Push& push) const { return std::string { "Push<" } + std::to_string(push.value) + ">"; }
     std::string operator() (const Add&) const { return std::string { "Add" }; }
-    std::string operator() (const Add1& add1) const { return std::string { "Add1<" } + std::to_string(add1.value) + ">";; }
+    std::string operator() (const Add1& add1) const { return std::string { "Add1<" } + std::to_string(add1.value) + ">"; }
     std::string operator() (const Sub&) const { return std::string { "Sub" }; }
+    std::string operator() (const Sub1& sub1) const { return std::string { "Sub1<" } + std::to_string(sub1.value) + ">"; }
     std::string operator() (const SubRev&) const { return std::string { "SubRev" }; }
     std::string operator() (const Mul&) const { return std::string { "Mul" }; }
     std::string operator() (const Mul1& mul1) const { return std::string { "Mul1<" } + std::to_string(mul1.value) + ">"; }
@@ -264,6 +265,12 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
         if (index < indexMaxM2) {
             if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Add)) {
                 next.emplace_back(Add1 { getPushValue(prev[index + 0]) });
+                index += 2;
+                continue;
+            }
+
+            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Sub)) {
+                next.emplace_back(Add1 { -getPushValue(prev[index + 0]) });
                 index += 2;
                 continue;
             }
