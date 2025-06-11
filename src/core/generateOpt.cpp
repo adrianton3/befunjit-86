@@ -8,6 +8,7 @@
 struct InstrStringifier {
     std::string operator() (const Push& push) const { return std::string { "Push<" } + std::to_string(push.value) + ">"; }
     std::string operator() (const Add&) const { return std::string { "Add" }; }
+    std::string operator() (const Add1& add1) const { return std::string { "Add1<" } + std::to_string(add1.value) + ">";; }
     std::string operator() (const Sub&) const { return std::string { "Sub" }; }
     std::string operator() (const SubRev&) const { return std::string { "SubRev" }; }
     std::string operator() (const Mul&) const { return std::string { "Mul" }; }
@@ -261,6 +262,12 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
         }
 
         if (index < indexMaxM2) {
+            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Add)) {
+                next.emplace_back(Add1 { getPushValue(prev[index + 0]) });
+                index += 2;
+                continue;
+            }
+
             if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Mul)) {
                 next.emplace_back(Mul1 { getPushValue(prev[index + 0]) });
                 index += 2;
@@ -351,6 +358,7 @@ void generateOpt (
             case InstrType::Push: push::value(bytes, std::get<Push>(instr).value); break;
 
             case InstrType::Add: push::add(bytes); break;
+            case InstrType::Add1: push::add1(bytes, std::get<Add1>(instr).value); break;
             case InstrType::Sub: push::sub(bytes); break;
             case InstrType::SubRev: push::subRev(bytes); break;
             case InstrType::Mul: push::mul(bytes); break;

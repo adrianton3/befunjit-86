@@ -9,7 +9,7 @@
 
 enum class InstrType : uint8_t {
     Push,
-    Add, Sub, SubRev, Mul, Mul1, Div, Mod,
+    Add, Add1, Sub, SubRev, Mul, Mul1, Div, Mod,
     Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
     Get, Get2, Put, Put2,
@@ -20,6 +20,7 @@ enum class InstrType : uint8_t {
 
 struct Push { int64_t value; };
 struct Add {};
+struct Add1 { int64_t value; };
 struct Sub {};
 struct SubRev {};
 struct Mul {};
@@ -53,7 +54,7 @@ struct End {};
 
 typedef std::variant<
     Push,
-    Add, Sub, SubRev, Mul, Mul1, Div, Mod,
+    Add, Add1, Sub, SubRev, Mul, Mul1, Div, Mod,
     Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
     Get, Get2, Put, Put2,
@@ -64,7 +65,7 @@ typedef std::variant<
 
 std::string stringify (const Instr&);
 
-void optimize (const std::vector<PathletEntry>& entries, std::vector<Instr>& finals);
+void optimize (const std::vector<PathletEntry>&, std::vector<Instr>&);
 
 void generateOpt (const Path&, const StaticBindings&, const Boolfield&, std::vector<uint8_t>&, std::vector<PathLink>&);
 

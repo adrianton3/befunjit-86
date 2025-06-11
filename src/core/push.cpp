@@ -38,6 +38,46 @@ void push::add (std::vector<uint8_t>& bytes) {
     });
 }
 
+void push::add1 (std::vector<uint8_t>& bytes, int64_t value) {
+    if (value == -1) {
+        bytes.insert(bytes.end(), {
+            0x48, 0xff, 0x4c, 0xf7, 0xf8           // dec [rdi + rsi * 8 - 8]
+        });
+        return;
+    }
+
+    if (value == 0) {
+        // nothing
+        return;
+    }
+
+    if (value == 1) {
+        bytes.insert(bytes.end(), {
+            0x48, 0xff, 0x44, 0xf7, 0xf8           // inc [rdi + rsi * 8 - 8]
+        });
+        return;
+    }
+
+    if (std::in_range<std::int8_t>(value)) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x83, 0x44, 0xf7, 0xf8, getByte<0>(value) // add [rdi + rsi * 8 - 8], 8bit
+        });
+        return;
+    }
+
+    if (std::in_range<std::int32_t>(value)) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x81, 0x44, 0xf7, 0xf8, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value) // add [rdi + rsi * 8 - 8], 32bit
+        });
+        return;
+    }
+
+    bytes.insert(bytes.end(), {
+        0x48, 0xb8, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value), getByte<4>(value), getByte<5>(value), getByte<6>(value), getByte<7>(value), // mov rax, 64bit
+        0x48, 0x01, 0x44, 0xf7, 0xf8               // add [rdi + rsi * 8 - 8], rax
+    });
+}
+
 void push::sub (std::vector<uint8_t>& bytes) {
     bytes.insert(bytes.end(), {
         0x48, 0x8b, 0x44, 0xf7, 0xf8,              // mov rax, [rdi + rsi * 8 - 8]
