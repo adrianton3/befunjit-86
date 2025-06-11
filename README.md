@@ -40,10 +40,13 @@ One of the code generators performs a few passes of constant folding:
 + `2*3*` becomes `6*`
 + `:+` becomes `2*`
 + `0\-` becomes `(-1)*`
++ `1:` becomes `11`; even though `1:` does not typically appear in befunge source code, it can result from previous fold passes
 
 One final pass performs strength reduction:
 + `abg` where `a` and `b` are known at compile time generate much less code than in the general case
 + `abp` where `a` and `b` are known at compile time bypass a few checks
++ `a+` where `a` is known generates fewer instructions than even a simple `+`
++ `a-` where `a` is known generates fewer instructions than even a simple `-`
 + `a*` where `a` is known to be -1, 0, 1, 3, 5 and any powers of two avoids multiplication
 + `\-` generates faster "reverse subtraction" code
 + `` \` `` generates as much code as a simple `` ` ``

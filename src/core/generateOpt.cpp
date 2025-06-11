@@ -10,7 +10,6 @@ struct InstrStringifier {
     std::string operator() (const Add&) const { return std::string { "Add" }; }
     std::string operator() (const Add1& add1) const { return std::string { "Add1<" } + std::to_string(add1.value) + ">"; }
     std::string operator() (const Sub&) const { return std::string { "Sub" }; }
-    std::string operator() (const Sub1& sub1) const { return std::string { "Sub1<" } + std::to_string(sub1.value) + ">"; }
     std::string operator() (const SubRev&) const { return std::string { "SubRev" }; }
     std::string operator() (const Mul&) const { return std::string { "Mul" }; }
     std::string operator() (const Mul1& mul1) const { return std::string { "Mul1<" } + std::to_string(mul1.value) + ">"; }
