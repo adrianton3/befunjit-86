@@ -1,6 +1,3 @@
-#include <array>
-#include <variant>
-
 #include "generate.h"
 #include "Pathlet.h"
 #include "push.h"
@@ -8,60 +5,39 @@
 #include "generateOpt.h"
 
 
-enum class InstrType : uint8_t {
-    Push,
-    Add, Sub, SubRev, Mul, Mul1, Div, Mod,
-    Not, Gt, Gte, Lt, Lte,
-    Dup, Swap, Drop,
-    Get, Get2, Put, Put2,
-    ReadInt64, ReadChar,
-    WriteInt64, WriteChar,
-    If, Rand, End
+struct InstrStringifier {
+    std::string operator() (const Push& push) const { return std::string { "Push<" } + std::to_string(push.value) + ">"; }
+    std::string operator() (const Add&) const { return std::string { "Add" }; }
+    std::string operator() (const Sub&) const { return std::string { "Sub" }; }
+    std::string operator() (const SubRev&) const { return std::string { "SubRev" }; }
+    std::string operator() (const Mul&) const { return std::string { "Mul" }; }
+    std::string operator() (const Mul1& mul1) const { return std::string { "Mul1<" } + std::to_string(mul1.value) + ">"; }
+    std::string operator() (const Div&) const { return std::string { "Div" }; }
+    std::string operator() (const Mod&) const { return std::string { "Mod" }; }
+    std::string operator() (const Not&) const { return std::string { "Not" }; }
+    std::string operator() (const Gt&) const { return std::string { "Gt" }; }
+    std::string operator() (const Gte&) const { return std::string { "Gte" }; }
+    std::string operator() (const Lt&) const { return std::string { "Lt" }; }
+    std::string operator() (const Lte&) const { return std::string { "Lte" }; }
+    std::string operator() (const Dup&) const { return std::string { "Dup" }; }
+    std::string operator() (const Swap&) const { return std::string { "Swap" }; }
+    std::string operator() (const Drop&) const { return std::string { "Drop" }; }
+    std::string operator() (const Get&) const { return std::string { "Get" }; }
+    std::string operator() (const Get2& get2) const { return std::string { "Get2<" } + std::to_string(get2.x) + ", " + std::to_string(get2.y) + ">"; }
+    std::string operator() (const Put&) const { return std::string { "Put" }; }
+    std::string operator() (const Put2& put2) const { return std::string { "Put2<" } + std::to_string(put2.x) + ", " + std::to_string(put2.y) + ">"; }
+    std::string operator() (const ReadInt64&) const { return std::string { "ReadInt64" }; }
+    std::string operator() (const ReadChar&) const { return std::string { "ReadChar" }; }
+    std::string operator() (const WriteInt64&) const { return std::string { "WriteInt64" }; }
+    std::string operator() (const WriteChar&) const { return std::string { "WriteChar" }; }
+    std::string operator() (const If&) const { return std::string { "If" }; }
+    std::string operator() (const Rand&) const { return std::string { "Rand" }; }
+    std::string operator() (const End&) const { return std::string { "End" }; }
 };
 
-struct Push { int64_t value; };
-struct Add {};
-struct Sub {};
-struct SubRev {};
-struct Mul {};
-struct Mul1 { int64_t value; };
-struct Div {};
-struct Mod {};
-
-struct Not {};
-struct Gt {};
-struct Gte {};
-struct Lt {};
-struct Lte {};
-
-struct Dup {};
-struct Swap {};
-struct Drop {};
-
-struct Get {};
-struct Get2 { int64_t x; int64_t y; };
-struct Put { Cursor cursor; };
-struct Put2 { int64_t x; int64_t y; Cursor cursor; };
-
-struct ReadInt64 {};
-struct ReadChar {};
-struct WriteInt64 {};
-struct WriteChar {};
-
-struct If {};
-struct Rand {};
-struct End {};
-
-typedef std::variant<
-    Push,
-    Add, Sub, SubRev, Mul, Mul1, Div, Mod,
-    Not, Gt, Gte, Lt, Lte,
-    Dup, Swap, Drop,
-    Get, Get2, Put, Put2,
-    ReadInt64, ReadChar,
-    WriteInt64, WriteChar,
-    If, Rand, End
-> Instr;
+std::string stringify (const Instr& instr) {
+    return std::visit(InstrStringifier {}, instr);
+}
 
 void translatePass (const std::vector<PathletEntry>& prev, std::vector<Instr>& next) {
     for (const auto& entry : prev) {
@@ -235,6 +211,14 @@ uint64_t foldPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                 index += 2;
                 continue;
             }
+
+            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Dup)) {
+                next.emplace_back(prev[index + 0]);
+                next.emplace_back(prev[index + 0]);
+                rewriteCount++;
+                index += 2;
+                continue;
+            }
         }
 
         next.push_back(prev[index]);
@@ -315,6 +299,32 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
     }
 }
 
+void optimize (const std::vector<PathletEntry>& entries, std::vector<Instr>& finals) {
+    std::vector<Instr> firsts;
+    translatePass(entries, firsts);
+
+    std::vector<Instr> seconds;
+    const auto foldCountFirst = foldPass(firsts, seconds);
+
+    if (foldCountFirst == 0) {
+        finalPass(seconds, finals);
+        return;
+    }
+
+    std::vector<Instr> thirds;
+    const auto foldCountSecond = foldPass(seconds, thirds);
+
+    if (foldCountSecond == 0) {
+        finalPass(thirds, finals);
+        return;
+    }
+
+    std::vector<Instr> fourths;
+    foldPass(thirds, fourths);
+
+    finalPass(fourths, finals);
+}
+
 void generateOpt (
     const Path& path,
     const StaticBindings& staticBindings,
@@ -331,23 +341,8 @@ void generateOpt (
         return;
     }
 
-    std::vector<Instr> firsts;
-    translatePass(path.entries, firsts);
-
-    std::vector<Instr> seconds;
-    const auto foldCount = foldPass(firsts, seconds);
-
     std::vector<Instr> finals;
-
-    if (foldCount > 0) {
-        std::vector<Instr> thirds;
-        foldPass(seconds, thirds);
-        // two passes should be enough
-
-        finalPass(thirds, finals);
-    } else {
-        finalPass(seconds, finals);
-    }
+    optimize(path.entries, finals);
 
     for (const auto& instr : finals) {
         const auto type = static_cast<InstrType>(instr.index());

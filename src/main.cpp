@@ -3,6 +3,7 @@
 #include "parts/readPlayfield.h"
 #include "parts/findPathlet.h"
 #include "parts/findGraph.h"
+#include "parts/findGraphOptimize.h"
 #include "parts/runLine.h"
 #include "parts/run.h"
 
@@ -26,6 +27,11 @@ int main (int argc, char** argv) {
 
         if (strcmp(argv[1], "find-graph") == 0) {
             part::findGraph(argv[2]);
+            return 0;
+        }
+
+        if (strcmp(argv[1], "find-graph-optimize") == 0) {
+            part::findGraphOptimize(argv[2]);
             return 0;
         }
 
@@ -100,8 +106,9 @@ int main (int argc, char** argv) {
         " %s read-playfield <bf-file>\n"
         " %s find-pathlet <bf-file>\n"
         " %s find-graph <bf-file>\n"
+        " %s find-graph-optimize <bf-file>\n"
         " %s run-line <bf-file>\n",
-        argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0]
+        argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0]
     );
     return 1;
 }
