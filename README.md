@@ -54,6 +54,16 @@ One final pass performs strength reduction:
 + `` `! `` generates as much code as a simple `` ` ``
 
 
+### Performance
+
+One program has been chosen as the benchmark - a mandelbrot set renderer (`test/spec/run-more/mandelbrot.bf`). `perf stat -r 100` reports
++ 87.42 msec when running mandelbrot.bf through the interpreter
++ 10.34 msec when running through the JIT with optimizations turned off
++ 5.16 msec with optimizations turned on
+
+In this test the JIT is 16 times faster than the interpreter.
+
+
 ### Building
 
 ```
