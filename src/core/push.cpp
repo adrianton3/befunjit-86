@@ -184,6 +184,14 @@ void push::mul1 (std::vector<uint8_t>& bytes, int64_t value) {
     });
 }
 
+void push::sqr (std::vector<uint8_t>& bytes) {
+    bytes.insert(bytes.end(), {
+        0x48, 0x8b, 0x44, 0xf7, 0xf8,              // mov rax, [rdi + rsi * 8 - 8]
+        0x48, 0x0f, 0xaf, 0xc0,                    // imul rax, rax
+        0x48, 0x89, 0x44, 0xf7, 0xf8,              // mov [rdi + rsi * 8 - 8], rax
+    });
+}
+
 void push::div (std::vector<uint8_t>& bytes) {
     bytes.insert(bytes.end(), {
         0x48, 0x8b, 0x44, 0xf7, 0xf0,              // mov rax, [rdi + rsi * 8 - 16]
@@ -512,6 +520,179 @@ void push::loopback (std::vector<uint8_t>& bytes, int64_t loopbackIndex) {
 
     bytes.insert(bytes.end(), {
         0xE9, getByte<0>(delta), getByte<1>(delta), getByte<2>(delta), getByte<3>(delta)               // jmp with 32bit offset
+    });
+}
+
+// ---
+
+void push::chain::chainStart (std::vector<uint8_t>& bytes) {
+    bytes.insert(bytes.end(), {
+        0x48, 0x8b, 0x44, 0xf7, 0xf8,              // mov rax, [rdi + rsi * 8 - 8]
+    });
+}
+
+void push::chain::chainEnd (std::vector<uint8_t>& bytes, int64_t count) {
+    const auto offset = -count * 8 - 8;
+
+    if (std::in_range<std::int8_t>(offset)) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x89, 0x44, 0xf7, getByte<0>(offset), // mov [rdi + rsi * 8 + offset], rax
+            0x48, 0x83, 0xee, getByte<0>(count),   // sub rsi, count
+        });
+    } else {
+        bytes.insert(bytes.end(), {
+            0x48, 0x89, 0x84, 0xf7, getByte<0>(offset), getByte<1>(offset), getByte<2>(offset), getByte<3>(offset), // mov [rdi + rsi * 8 + offset], rax
+            0x48, 0x81, 0xee, getByte<0>(count), getByte<1>(count), getByte<2>(count), getByte<3>(count), // sub rsi, count
+        });
+    }
+}
+
+void push::chain::add (std::vector<uint8_t>& bytes, int64_t count) {
+    const auto offset = -count * 8;
+
+    bytes.insert(bytes.end(), {
+        0x48, 0x03, 0x44, 0xf7, getByte<0>(offset) // add rax, [rdi + rsi * 8 + offset]
+    });
+}
+
+void push::chain::add1 (std::vector<uint8_t>& bytes, int64_t value) {
+    if (value == -1) {
+        bytes.insert(bytes.end(), {
+            0x48, 0xff, 0xc8                       // dec rax
+        });
+        return;
+    }
+
+    if (value == 0) {
+        // nothing
+        return;
+    }
+
+    if (value == 1) {
+        bytes.insert(bytes.end(), {
+            0x48, 0xff, 0xc0                       // inc rax
+        });
+        return;
+    }
+
+    if (std::in_range<std::int8_t>(value)) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x83, 0xc0, getByte<0>(value)    // add rax, 8bit
+        });
+        return;
+    }
+
+    if (std::in_range<std::int32_t>(value)) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x05, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value) // add rax, 32bit
+        });
+        return;
+    }
+
+    bytes.insert(bytes.end(), {
+        0x48, 0xb9, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value), getByte<4>(value), getByte<5>(value), getByte<6>(value), getByte<7>(value), // mov rcx, 64bit
+        0x48, 0x01, 0xc8,                          // add rax, rcx
+    });
+}
+
+void push::chain::sub (std::vector<uint8_t>& bytes, int64_t count) {
+    const auto offset = -count * 8;
+
+    bytes.insert(bytes.end(), {
+        0x48, 0xf7, 0xd8,                          // neg rax
+        0x48, 0x03, 0x44, 0xf7, getByte<0>(offset) // add rax, [rdi + rsi * 8 + offset]
+    });
+}
+
+void push::chain::subRev (std::vector<uint8_t>& bytes, int64_t count) {
+    const auto offset = -count * 8;
+
+    bytes.insert(bytes.end(), {
+        0x48, 0x2b, 0x44, 0xf7, getByte<0>(offset) // sub rax, [rdi + rsi * 8 + offset]
+    });
+}
+
+void push::chain::mul (std::vector<uint8_t>& bytes, int64_t count) {
+    const auto offset = -count * 8;
+
+    bytes.insert(bytes.end(), {
+        0x48, 0x0f, 0xaf, 0x44, 0xf7, getByte<0>(offset) // imul rax, [rdi + rsi * 8 + offset]
+    });
+}
+
+void push::chain::mul1 (std::vector<uint8_t>& bytes, int64_t value) {
+    if (value == -1) {
+        bytes.insert(bytes.end(), {
+            0x48, 0xf7, 0xd8,                      // neg rax
+        });
+        return;
+    }
+
+    if (value == 0) {
+        bytes.insert(bytes.end(), {
+            0x31, 0xc0,                            // xor eax, eax
+        });
+        return;
+    }
+
+    if (value == 1) {
+        // nothing
+        return;
+    }
+
+    if (value == 2) {
+        bytes.insert(bytes.end(), {
+            0x48, 0xd1, 0xe0,                      // shl rax
+        });
+        return;
+    }
+
+    if (value == 3) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x8d, 0x04, 0x40                 // lea rax, [rax + rax * 2]
+        });
+        return;
+    }
+
+    if (value == 5) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x8d, 0x04, 0x80                 // lea rax, [rax + rax * 4]
+        });
+        return;
+    }
+
+    if ((value & (value - 1)) == 0) {
+        // powers of two
+        const auto shift = std::bit_width(static_cast<uint64_t>(value)) - 1;
+        bytes.insert(bytes.end(), {
+            0x48, 0xc1, 0xe0, getByte<0>(shift)    // shl rax, shift
+        });
+        return;
+    }
+
+    if (std::in_range<std::int8_t>(value)) [[likely]] {
+        bytes.insert(bytes.end(), {
+            0x48, 0x6b, 0xc0, getByte<0>(value)    // imul rax, 8bit
+        });
+        return;
+    }
+
+    if (std::in_range<std::int32_t>(value)) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x69, 0xc0, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value), // imul rax, 32bit
+        });
+        return;
+    }
+
+    bytes.insert(bytes.end(), {
+        0x48, 0xb9, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value), getByte<4>(value), getByte<5>(value), getByte<6>(value), getByte<7>(value), // mov rcx, 64bit
+        0x48, 0x0f, 0xaf, 0xc1                     // imul rax, rcx
+    });
+}
+
+void push::chain::sqr (std::vector<uint8_t>& bytes) {
+    bytes.insert(bytes.end(), {
+        0x48, 0x0f, 0xaf, 0xc0                     // imul rax, rax
     });
 }
 

@@ -32,6 +32,8 @@ namespace push {
 
     void mul1 (std::vector<uint8_t>& bytes, int64_t value);
 
+    void sqr (std::vector<uint8_t>& bytes);
+
     void div (std::vector<uint8_t>& bytes);
 
     void mod (std::vector<uint8_t>& bytes);
@@ -75,6 +77,28 @@ namespace push {
     void jump (std::vector<uint8_t>& bytes, Path* path, std::vector<PathLink>& pathLinks);
 
     void loopback (std::vector<uint8_t>& bytes, int64_t loopbackIndex);
+
+    namespace chain {
+
+        void chainStart (std::vector<uint8_t>& bytes);
+
+        void chainEnd (std::vector<uint8_t>& bytes, int64_t count);
+
+        void add (std::vector<uint8_t>& bytes, int64_t count);
+
+        void add1 (std::vector<uint8_t>& bytes, int64_t value);
+
+        void sub (std::vector<uint8_t>& bytes, int64_t count);
+
+        void subRev (std::vector<uint8_t>& bytes, int64_t count);
+
+        void mul (std::vector<uint8_t>& bytes, int64_t count);
+
+        void mul1 (std::vector<uint8_t>& bytes, int64_t value);
+
+        void sqr (std::vector<uint8_t>& bytes);
+
+    }
 
 }
 

@@ -9,13 +9,14 @@
 
 enum class InstrType : uint8_t {
     Push,
-    Add, Add1, Sub, SubRev, Mul, Mul1, Div, Mod,
+    Add, Add1, Sub, SubRev, Mul, Mul1, Sqr, Div, Mod,
     Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
     Get, Get2, Put, Put2,
     ReadInt64, ReadChar,
     WriteInt64, WriteChar,
-    If, Rand, End
+    If, Rand, End,
+    ChainStart, ChainEnd
 };
 
 struct Push { int64_t value; };
@@ -25,6 +26,7 @@ struct Sub {};
 struct SubRev {};
 struct Mul {};
 struct Mul1 { int64_t value; };
+struct Sqr {};
 struct Div {};
 struct Mod {};
 
@@ -52,15 +54,19 @@ struct If {};
 struct Rand {};
 struct End {};
 
+struct ChainStart {};
+struct ChainEnd {};
+
 typedef std::variant<
     Push,
-    Add, Add1, Sub, SubRev, Mul, Mul1, Div, Mod,
+    Add, Add1, Sub, SubRev, Mul, Mul1, Sqr, Div, Mod,
     Not, Gt, Gte, Lt, Lte,
     Dup, Swap, Drop,
     Get, Get2, Put, Put2,
     ReadInt64, ReadChar,
     WriteInt64, WriteChar,
-    If, Rand, End
+    If, Rand, End,
+    ChainStart, ChainEnd
 > Instr;
 
 std::string stringify (const Instr&);

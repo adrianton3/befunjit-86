@@ -13,6 +13,7 @@ struct InstrStringifier {
     std::string operator() (const SubRev&) const { return std::string { "SubRev" }; }
     std::string operator() (const Mul&) const { return std::string { "Mul" }; }
     std::string operator() (const Mul1& mul1) const { return std::string { "Mul1<" } + std::to_string(mul1.value) + ">"; }
+    std::string operator() (const Sqr&) const { return std::string { "Sqr" }; }
     std::string operator() (const Div&) const { return std::string { "Div" }; }
     std::string operator() (const Mod&) const { return std::string { "Mod" }; }
     std::string operator() (const Not&) const { return std::string { "Not" }; }
@@ -34,6 +35,8 @@ struct InstrStringifier {
     std::string operator() (const If&) const { return std::string { "If" }; }
     std::string operator() (const Rand&) const { return std::string { "Rand" }; }
     std::string operator() (const End&) const { return std::string { "End" }; }
+    std::string operator() (const ChainStart&) const { return std::string { "[" }; }
+    std::string operator() (const ChainEnd&) const { return std::string { "]" }; }
 };
 
 std::string stringify (const Instr& instr) {
@@ -305,6 +308,12 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                 index += 2;
                 continue;
             }
+
+            if (matchesUnsafe(prev, index, InstrType::Dup, InstrType::Mul)) {
+                next.emplace_back(Sqr {});
+                index += 2;
+                continue;
+            }
         }
 
         next.push_back(prev[index]);
@@ -312,15 +321,71 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
     }
 }
 
-void optimize (const std::vector<PathletEntry>& entries, std::vector<Instr>& finals) {
+bool isChainable (const Instr& instr) {
+    const auto type = static_cast<InstrType>(instr.index());
+
+    return type == InstrType::Add ||
+        type == InstrType::Add1 ||
+        type == InstrType::Sub ||
+        type == InstrType::SubRev ||
+        type == InstrType::Mul ||
+        type == InstrType::Mul1 ||
+        type == InstrType::Sqr;
+}
+
+void chainPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
+    const auto indexMaxM0 = prev.size();
+    const auto indexMaxM1 = indexMaxM0 - 1;
+
+    size_t index = 0;
+    bool chainMode = false;
+
+    while (index < indexMaxM1) {
+        if (chainMode) {
+            if (!isChainable(prev[index])) {
+                next.emplace_back(ChainEnd {});
+                chainMode = false;
+            }
+            next.push_back(prev[index]);
+            index++;
+            continue;
+        }
+
+        if (isChainable(prev[index]) && isChainable(prev[index + 1])) {
+            next.push_back(ChainStart {});
+            chainMode = true;
+        }
+
+        next.push_back(prev[index]);
+
+        index++;
+    }
+
+    if (chainMode) {
+        if (isChainable(prev[index])) {
+            next.push_back(prev[index]);
+            next.emplace_back(ChainEnd {});
+        } else {
+            next.emplace_back(ChainEnd {});
+            next.push_back(prev[index]);
+        }
+    } else {
+        next.push_back(prev[index]);
+    }
+}
+
+void optimize (const std::vector<PathletEntry>& entries, std::vector<Instr>& postFinals) {
     std::vector<Instr> firsts;
     translatePass(entries, firsts);
 
     std::vector<Instr> seconds;
     const auto foldCountFirst = foldPass(firsts, seconds);
 
+    std::vector<Instr> finals;
+
     if (foldCountFirst == 0) {
         finalPass(seconds, finals);
+        chainPass(finals, postFinals);
         return;
     }
 
@@ -329,13 +394,14 @@ void optimize (const std::vector<PathletEntry>& entries, std::vector<Instr>& fin
 
     if (foldCountSecond == 0) {
         finalPass(thirds, finals);
+        chainPass(finals, postFinals);
         return;
     }
 
     std::vector<Instr> fourths;
     foldPass(thirds, fourths);
-
     finalPass(fourths, finals);
+    chainPass(finals, postFinals);
 }
 
 void generateOpt (
@@ -357,8 +423,39 @@ void generateOpt (
     std::vector<Instr> finals;
     optimize(path.entries, finals);
 
+    bool isChainMode = false;
+    auto chainSize = -1;
+
     for (const auto& instr : finals) {
         const auto type = static_cast<InstrType>(instr.index());
+
+        if (isChainMode) {
+            if (type == InstrType::ChainEnd) {
+                push::chain::chainEnd(bytes, chainSize - 2);
+                isChainMode = false;
+                continue;
+            }
+
+            switch (type) {
+                case InstrType::Add: push::chain::add(bytes, chainSize); chainSize++; break;
+                case InstrType::Add1: push::chain::add1(bytes, std::get<Add1>(instr).value); break;
+                case InstrType::Sub: push::chain::sub(bytes, chainSize); chainSize++; break;
+                case InstrType::SubRev: push::chain::subRev(bytes, chainSize); chainSize++; break;
+                case InstrType::Mul: push::chain::mul(bytes, chainSize); chainSize++; break;
+                case InstrType::Mul1: push::chain::mul1(bytes, std::get<Mul1>(instr).value); break;
+                case InstrType::Sqr: push::chain::sqr(bytes); break;
+                default: break;
+            }
+
+            continue;
+        }
+
+        if (type == InstrType::ChainStart) {
+            isChainMode = true;
+            chainSize = 2;
+            push::chain::chainStart(bytes);
+            continue;
+        }
 
         switch (type) {
             case InstrType::Push: push::value(bytes, std::get<Push>(instr).value); break;
@@ -369,6 +466,7 @@ void generateOpt (
             case InstrType::SubRev: push::subRev(bytes); break;
             case InstrType::Mul: push::mul(bytes); break;
             case InstrType::Mul1: push::mul1(bytes, std::get<Mul1>(instr).value); break;
+            case InstrType::Sqr: push::sqr(bytes); break;
             case InstrType::Div: push::div(bytes); break;
             case InstrType::Mod: push::mod(bytes); break;
 
