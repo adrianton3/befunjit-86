@@ -42,7 +42,7 @@ One of the code generators performs a few passes of constant folding:
 + `0\-` becomes `(-1)*`
 + `1:` becomes `11`; even though `1:` does not typically appear in befunge source code, it can result from previous fold passes
 
-One final pass performs strength reduction:
+These are followed by a pass that performs strength reduction:
 + `abg` where `a` and `b` are known at compile time generate much less code than in the general case
 + `abp` where `a` and `b` are known at compile time bypass a few checks
 + `a+` where `a` is known generates fewer instructions than even a simple `+`
@@ -53,15 +53,17 @@ One final pass performs strength reduction:
 + `` \`! `` generates as much code as a simple `` ` ``
 + `` `! `` generates as much code as a simple `` ` ``
 
+Finally, one more pass aims to bypass the stack alltogether when executing some operations consecutively: `add`, `sub`, `sub-reverse`, `mul`, `square`.
+
 
 ### Performance
 
 One program has been chosen as the benchmark - a mandelbrot set renderer (`test/spec/run-more/mandelbrot.bf`). `perf stat -r 100` reports
 + 87.42 msec when running mandelbrot.bf through the interpreter
 + 10.34 msec when running through the JIT with optimizations turned off
-+ 5.16 msec with optimizations turned on
++ 4.06 msec with optimizations turned on
 
-In this test the JIT is 16 times faster than the interpreter.
+In this test the JIT is ~21 times faster than the interpreter.
 
 
 ### Building
