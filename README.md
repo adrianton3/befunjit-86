@@ -58,12 +58,24 @@ Finally, one more pass aims to bypass the stack alltogether when executing some 
 
 ### Performance
 
-One program has been chosen as the benchmark - a mandelbrot set renderer (`test/spec/run-more/mandelbrot.bf`). `perf stat -r 100` reports
+The first program to use as a benchmark is a mandelbrot set renderer (`test/spec/run-more/mandelbrot.bf`). `perf stat -r 100` reports
 + 87.42 msec when running mandelbrot.bf through the interpreter
 + 10.34 msec when running through the JIT with optimizations turned off
 + 4.06 msec with optimizations turned on
 
 In this test the JIT is ~21 times faster than the interpreter.
+
+The second program to use as a benchmark is `test/spec/run-more/count-down-mutate.bf` - this just counts down from 9 ** 4 to 0 but
+it does this by modifying its code for every iteration. `perf stat -r 100` reports
++ 1.39 msec when running through the interpreter
++ 29.98 msec when running through the JIT with optimizations turned off
++ 35.49 msec with optimizations turned on
+
+In this test the JIT is ~25 times slower than the interpreter. This test has been intentionally crafted to trigger as many recompilations
+as possible. The mandelbrot benchmark also reads and writes to the playfield but it does not trigger any recompilations.
+
+Interestingly when skipping `mprotect` on the allocated code pages the times reported become 15.75 msec (without optimizations) and
+21.52 msec (with optimizations).
 
 
 ### Building
