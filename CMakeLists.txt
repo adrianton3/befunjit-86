@@ -12,8 +12,6 @@ add_executable(b86 src/main.cpp
         src/core/Pathlet.h
         src/core/Field.cpp
         src/core/Field.h
-        src/core/alloc.cpp
-        src/core/alloc.h
         src/core/StaticBindings.h
         src/core/Graph.cpp
         src/core/Graph.h
@@ -40,4 +38,6 @@ add_executable(b86 src/main.cpp
         src/core/generateOpt.cpp
         src/core/generateOpt.h
         src/parts/findGraphOptimize.cpp
-        src/parts/findGraphOptimize.h)
+        src/parts/findGraphOptimize.h
+        src/core/Binary.cpp
+        src/core/Binary.h)

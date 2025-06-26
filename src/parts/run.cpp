@@ -1,4 +1,4 @@
-#include "../core/alloc.h"
+#include "../core/Binary.h"
 #include "../core/generate.h"
 #include "../core/generateOpt.h"
 #include "../core/readPlayfield.h"
@@ -92,6 +92,8 @@ void part::run (const std::string& file, RunOptions runOptions) {
     compileRequest = true;
     putCursorPacked = pack({ { 79, 0 }, { 1, 0 }});
 
+    Binary binary;
+
     while (compileRequest) {
         compileRequest = false;
 
@@ -109,7 +111,7 @@ void part::run (const std::string& file, RunOptions runOptions) {
             generate(graph, staticBindings, bytes);
         }
 
-        uint8_t* code = alloc(bytes);
+        binary.write(bytes);
 
         // {
         //     FILE* fd = fopen("binary", "wb");
@@ -117,11 +119,7 @@ void part::run (const std::string& file, RunOptions runOptions) {
         //     fclose(fd);
         // }
 
-        call(code, &stack[runOptions.stackSize], offset);
-
-        if (compileRequest) {
-            dealloc(code, bytes.size());
-        }
+        binary.call(&stack[runOptions.stackSize], offset);
     }
 
     printf("\n");

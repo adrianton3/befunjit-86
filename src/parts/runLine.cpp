@@ -1,6 +1,6 @@
 #include <fstream>
 
-#include "../core/alloc.h"
+#include "../core/Binary.h"
 #include "../core/generate.h"
 #include "../core/push.h"
 
@@ -103,10 +103,11 @@ void part::runLine (const std::string& fileName) {
 
     generate(path, staticBindings, bytes, pathLinks);
 
-    uint8_t* code = alloc(bytes);
-
     int64_t stack[256];
     int64_t offset { 0 };
+
+    Binary binary;
+    binary.write(bytes);
 
     // {
     //     FILE* fd = fopen("binary", "wb");
@@ -116,7 +117,7 @@ void part::runLine (const std::string& fileName) {
 
     // objdump -D -Mintel,x86-64 -b binary -m i386 binary
 
-    call(code, stack, offset);
+    binary.call(stack, offset);
 
     printf("\n");
 }
