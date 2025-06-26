@@ -31,7 +31,9 @@ std::string stringify (const Playfield& playfield) {
 
     if (!nonprintables.empty()) {
         str += '\n';
-        str += "playfield contains values that cannot be printed as chars:\n";
+        str += "playfield contains ";
+        str += std::to_string(nonprintables.size());
+        str += " value(s) that cannot be printed as chars:\n";
 
         for (const auto& nonprintable : nonprintables) {
             str += stringify(nonprintable.location);
