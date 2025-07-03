@@ -91,6 +91,33 @@ function collect (name, sub, makeArgs, entries) {
     }
 }
 
+function stringTrimEquals (aRaw, bRaw) {
+    if (aRaw === bRaw) {
+        return { match: true, grade: 'perfect' }
+    }
+
+    const aTrim = aRaw.trimEnd()
+    const bTrim = bRaw.trimEnd()
+
+    if (aTrim === bTrim) {
+        return { match: true, grade: 'trim-end' }
+    }
+
+    const aLines = aTrim.split('\n')
+    const bLines = bTrim.split('\n')
+
+    for (let i = 0; i < aLines.length; i++) {
+        const aLine = aLines[i]
+        const bLine = bLines[i]
+
+        if (aLine.trimEnd() !== bLine.trimEnd()) {
+            return { match: false, lineIndex: i }
+        }
+    }
+
+    return { match: true, grade: 'trim-lines' }
+}
+
 function consume (entries) {
     let index = 0
     let anyError = false
@@ -129,17 +156,18 @@ function consume (entries) {
             (outRaw, err) => {
                 const expRaw = fs.readFileSync(entry.expFile, { encoding: 'utf-8' })
 
-                const outTrim = outRaw.trimEnd()
-                const expTrim = expRaw.trimEnd()
+                const equalsResult = stringTrimEquals(outRaw, expRaw)
 
-                if (outTrim === expTrim) {
-                    process.stdout.write(chalk.green(`ok\n`))
+                if (equalsResult.match) {
+                    process.stdout.write(chalk.green(`ok`))
+                    process.stdout.write(chalk.italic.dim(`    ${equalsResult.grade}\n`))
                 } else {
                     anyError = true
                     process.stdout.write(chalk.red(`fail\n`))
 
-                    process.stdout.write(`expected '${expTrim}'\n`)
-                    process.stdout.write(`but got  '${outTrim}'\n`)
+                    process.stdout.write(`expected '${expRaw}'\n`)
+                    process.stdout.write(`but got  '${outRaw}'\n`)
+                    process.stdout.write(`mismatch on line ${equalsResult.lineIndex + 1}\n`)
                     process.stdout.write(`\n`)
                 }
 
@@ -149,13 +177,10 @@ function consume (entries) {
                 anyError = true
                 const expRaw = fs.readFileSync(entry.expFile, { encoding: 'utf-8' })
 
-                const outTrim = outRaw.trimEnd()
-                const expTrim = expRaw.trimEnd()
-
                 process.stdout.write(chalk.red(`fail\n`))
 
-                process.stdout.write(`expected '${expTrim}'\n`)
-                process.stdout.write(`got      '${outTrim}'\n`)
+                process.stdout.write(`expected '${expRaw}'\n`)
+                process.stdout.write(`got      '${outRaw}'\n`)
                 process.stdout.write(`err      '${err}'\n`)
                 process.stdout.write(`code     ${code}\n`)
                 process.stdout.write(`signal   ${signal}\n`)
