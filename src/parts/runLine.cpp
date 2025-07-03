@@ -22,8 +22,10 @@ int64_t bind::runLine::readInt64 () {
     auto count = scanf("%ld", &value);
 
     if (count <= 0) {
-        fprintf(stderr, "could not read int64 from stdin\n");
-        exit(1);
+        return -1;
+
+        // fprintf(stderr, "could not read int64 from stdin\n");
+        // exit(1);
     }
 
     return value;
@@ -34,8 +36,10 @@ int64_t bind::runLine::readChar () {
     auto count = scanf("%c", &value);
 
     if (count <= 0) {
-        fprintf(stderr, "could not read char from stdin\n");
-        exit(1);
+        return -1;
+
+        // fprintf(stderr, "could not read char from stdin\n");
+        // exit(1);
     }
 
     return value;

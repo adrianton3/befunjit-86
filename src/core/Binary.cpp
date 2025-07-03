@@ -60,7 +60,7 @@ void Binary::alloc (const std::vector<uint8_t>& bytes) {
 
     const auto protectResult = mprotect(raw, capacity, PROT_READ|PROT_EXEC);
 
-    if (protectResult == -1) {
+    if (protectResult != 0) {
         munmap(raw, capacity);
         size = 0;
         capacity = 0;
@@ -73,7 +73,7 @@ void Binary::refresh (const std::vector<uint8_t>& bytes) {
 
     const auto deprotectResult = mprotect(raw, capacity, PROT_WRITE);
 
-    if (deprotectResult == -1) {
+    if (deprotectResult != 0) {
         munmap(raw, capacity);
         size = 0;
         capacity = 0;
@@ -86,7 +86,7 @@ void Binary::refresh (const std::vector<uint8_t>& bytes) {
 
     const auto protectResult = mprotect(raw, capacity, PROT_READ|PROT_EXEC);
 
-    if (protectResult == -1) {
+    if (protectResult != 0) {
         munmap(raw, capacity);
         size = 0;
         capacity = 0;
