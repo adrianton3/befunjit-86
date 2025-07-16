@@ -7,6 +7,11 @@
 
 
 struct Graph {
+    Graph (std::unordered_map<Cursor, Path*>&& _map, Path* _start)
+    : map { std::move(_map) }
+    , start { _start }
+    {}
+
     std::unordered_map<Cursor, Path*> map;
     Path* start;
 

@@ -24,7 +24,7 @@ Pathlet findPathlet (const Playfield& playfield, Cursor cursor) {
                 index++;
             }
 
-            entries.push_back({ cursor, value, stringMode });
+            entries.emplace_back(cursor, value, stringMode);
             cursor.advance();
 
             continue;
@@ -41,15 +41,15 @@ Pathlet findPathlet (const Playfield& playfield, Cursor cursor) {
         }
 
         if (const auto indexMaybe = map.find(cursor); indexMaybe != map.end()) {
-            return { entries, indexMaybe->second };
+            return { std::move(entries), indexMaybe->second };
         }
 
         map.insert({ cursor, index });
 
-        entries.push_back({ cursor, value, false });
+        entries.emplace_back(cursor, value, false);
 
         if (value == '_' || value == '|' || value == '?' || value == '@') {
-            return { entries, -1 };
+            return { std::move(entries), -1 };
         }
 
         if (value == '#') {
@@ -64,7 +64,7 @@ Pathlet findPathlet (const Playfield& playfield, Cursor cursor) {
         index++;
     }
 
-    return { entries, -1 };
+    return { std::move(entries), -1 };
 };
 
 std::string stringify (const PathletEntry& entry) {

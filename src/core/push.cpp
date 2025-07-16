@@ -179,8 +179,8 @@ void push::mul1 (std::vector<uint8_t>& bytes, int64_t value) {
     // but this bit of code doesn't know that
     bytes.insert(bytes.end(), {
         0x48, 0xb8, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value), getByte<4>(value), getByte<5>(value), getByte<6>(value), getByte<7>(value),  // mov rax, 64bit
-        0x48, 0x0f, 0xaf, 0x44, 0xf7, 0xf8,    // imul rax, [rdi + rsi * 8 - 8]
-        0x48, 0x89, 0x44, 0xf7, 0xf8,          // mov [rdi + rsi * 8 - 8], rax
+        0x48, 0x0f, 0xaf, 0x44, 0xf7, 0xf8,        // imul rax, [rdi + rsi * 8 - 8]
+        0x48, 0x89, 0x44, 0xf7, 0xf8,              // mov [rdi + rsi * 8 - 8], rax
     });
 }
 
@@ -399,9 +399,9 @@ void push::put2NoRecomp (std::vector<uint8_t>& bytes, int64_t const* playfieldDa
 
     bytes.insert(bytes.end(), {
         0x48, 0xb8, getByte<0>(playfieldDataAddress), getByte<1>(playfieldDataAddress), getByte<2>(playfieldDataAddress), getByte<3>(playfieldDataAddress), getByte<4>(playfieldDataAddress), getByte<5>(playfieldDataAddress), getByte<6>(playfieldDataAddress), getByte<7>(playfieldDataAddress), // mov rax, playfieldDataAddress
-        0x48, 0x8b, 0x54, 0xf7, 0xf8, // mov rdx, [rdi + rsi * 8 - 8]
+        0x48, 0x8b, 0x54, 0xf7, 0xf8,              // mov rdx, [rdi + rsi * 8 - 8]
         0x48, 0x89, 0x90, getByte<0>(offsetFlat), getByte<1>(offsetFlat), getByte<2>(offsetFlat), getByte<3>(offsetFlat), // mov [rax + offsetFlat], rdx
-        0x48, 0xff, 0xce, // dec rsi
+        0x48, 0xff, 0xce,                          // dec rsi
     });
 }
 
@@ -519,7 +519,7 @@ void push::loopback (std::vector<uint8_t>& bytes, int64_t loopbackIndex) {
     // if delta fits in 8bits then use the shorter jump
 
     bytes.insert(bytes.end(), {
-        0xE9, getByte<0>(delta), getByte<1>(delta), getByte<2>(delta), getByte<3>(delta)               // jmp with 32bit offset
+        0xE9, getByte<0>(delta), getByte<1>(delta), getByte<2>(delta), getByte<3>(delta) // jmp with 32bit offset
     });
 }
 

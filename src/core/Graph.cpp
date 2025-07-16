@@ -18,64 +18,70 @@ Graph findGraph (const Playfield& playfield, const Cursor& cursor) {
         const auto pathlet = findPathlet(playfield, start);
 
         if (pathlet.loopbackIndex >= 0) {
-            auto* path = new Path { pathlet.entries, nullptr, nullptr, nullptr, nullptr, pathlet.loopbackIndex, 0 };
+            auto* path = new Path { std::move(pathlet.entries), pathlet.loopbackIndex };
             map.insert({ preStart, path });
             return path;
-        } else {
-            const PathletEntry& pathletEntryEnd = pathlet.entries.back();
+        }
 
-            if (pathletEntryEnd.value == '@') {
-                auto* path = new Path { pathlet.entries, nullptr, nullptr, nullptr, nullptr, -1, 0 };
-                map.insert({ preStart, path });
-                return path;
-            } else if (pathletEntryEnd.value == '_') {
-                auto* path = new Path { pathlet.entries, nullptr, nullptr, nullptr, nullptr, -1, 0 };
-                map.insert({ preStart, path });
+        const PathletEntry& pathletEntryEnd = pathlet.entries.back();
 
-                Cursor preStartRight = pathletEntryEnd.cursor;
-                preStartRight.directRight();
-                path->next0 = df(preStartRight);
+        if (pathletEntryEnd.value == '@') {
+            auto* path = new Path { std::move(pathlet.entries) };
+            map.insert({ preStart, path });
+            return path;
+        }
 
-                Cursor preStartLeft = pathletEntryEnd.cursor;
-                preStartLeft.directLeft();
-                path->next1 = df(preStartLeft);
+        if (pathletEntryEnd.value == '_') {
+            auto* path = new Path { std::move(pathlet.entries) };
+            map.insert({ preStart, path });
 
-                return path;
-            } else if (pathletEntryEnd.value == '|') {
-                auto* path = new Path { pathlet.entries, nullptr, nullptr, nullptr, nullptr, -1, 0 };
-                map.insert({ preStart, path });
+            Cursor preStartRight = pathletEntryEnd.cursor;
+            preStartRight.directRight();
+            path->next0 = df(preStartRight);
 
-                Cursor preStartDown = pathletEntryEnd.cursor;
-                preStartDown.directDown();
-                path->next0 = df(preStartDown);
+            Cursor preStartLeft = pathletEntryEnd.cursor;
+            preStartLeft.directLeft();
+            path->next1 = df(preStartLeft);
 
-                Cursor preStartUp = pathletEntryEnd.cursor;
-                preStartUp.directUp();
-                path->next1 = df(preStartUp);
+            return path;
+        }
 
-                return path;
-            } else if (pathletEntryEnd.value == '?') {
-                auto* path = new Path { pathlet.entries, nullptr, nullptr, nullptr, nullptr, -1, 0 };
-                map.insert({ preStart, path });
+        if (pathletEntryEnd.value == '|') {
+            auto* path = new Path { std::move(pathlet.entries) };
+            map.insert({ preStart, path });
 
-                Cursor preStartUp = pathletEntryEnd.cursor;
-                preStartUp.directUp();
-                path->next0 = df(preStartUp);
+            Cursor preStartDown = pathletEntryEnd.cursor;
+            preStartDown.directDown();
+            path->next0 = df(preStartDown);
 
-                Cursor preStartLeft = pathletEntryEnd.cursor;
-                preStartLeft.directLeft();
-                path->next1 = df(preStartLeft);
+            Cursor preStartUp = pathletEntryEnd.cursor;
+            preStartUp.directUp();
+            path->next1 = df(preStartUp);
 
-                Cursor preStartDown = pathletEntryEnd.cursor;
-                preStartDown.directDown();
-                path->next2 = df(preStartDown);
+            return path;
+        }
 
-                Cursor preStartRight = pathletEntryEnd.cursor;
-                preStartRight.directRight();
-                path->next3 = df(preStartRight);
+        if (pathletEntryEnd.value == '?') {
+            auto* path = new Path { std::move(pathlet.entries) };
+            map.insert({ preStart, path });
 
-                return path;
-            }
+            Cursor preStartUp = pathletEntryEnd.cursor;
+            preStartUp.directUp();
+            path->next0 = df(preStartUp);
+
+            Cursor preStartLeft = pathletEntryEnd.cursor;
+            preStartLeft.directLeft();
+            path->next1 = df(preStartLeft);
+
+            Cursor preStartDown = pathletEntryEnd.cursor;
+            preStartDown.directDown();
+            path->next2 = df(preStartDown);
+
+            Cursor preStartRight = pathletEntryEnd.cursor;
+            preStartRight.directRight();
+            path->next3 = df(preStartRight);
+
+            return path;
         }
 
         return nullptr;
@@ -83,7 +89,7 @@ Graph findGraph (const Playfield& playfield, const Cursor& cursor) {
 
     auto* start = df(cursor);
 
-    return Graph { map, start };
+    return Graph { std::move(map), start };
 }
 
 std::string stringify (const Graph& graph) {
