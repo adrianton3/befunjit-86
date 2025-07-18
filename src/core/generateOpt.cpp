@@ -352,7 +352,7 @@ void chainPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
         }
 
         if (isChainable(prev[index]) && isChainable(prev[index + 1])) {
-            next.push_back(ChainStart {});
+            next.emplace_back(ChainStart {});
             chainMode = true;
         }
 
@@ -524,7 +524,7 @@ void generateOpt (
     }
 }
 
-void generateOpt (Graph& graph, const StaticBindings& staticBindings, const Boolfield& boolfield, std::vector<uint8_t>& bytes) {
+void generateOpt (const Graph& graph, const StaticBindings& staticBindings, const Boolfield& boolfield, std::vector<uint8_t>& bytes) {
     std::vector<PathLink> pathLinks;
 
     push::init(bytes);

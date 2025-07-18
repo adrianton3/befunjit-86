@@ -16,7 +16,7 @@ public:
         flat.resize(width * height);
     }
 
-    T getAtUnsafe (int64_t x, int64_t y) const {
+    [[nodiscard]] T getAtUnsafe (int64_t x, int64_t y) const {
         return flat[y * width + x];
     }
 

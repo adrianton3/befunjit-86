@@ -1,7 +1,7 @@
 #include "Cursor.h"
 
 
-uint64_t pack (const Cursor& cursor) {
+uint64_t pack (Cursor cursor) {
     return
        ((cursor.increment.y + 1) << 18) |
        ((cursor.increment.x + 1) << 16) |

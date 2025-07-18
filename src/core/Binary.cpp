@@ -21,7 +21,7 @@ void Binary::write (const std::vector<uint8_t>& bytes) {
     alloc(bytes);
 }
 
-void Binary::call (int64_t* stack, int64_t offset) {
+void Binary::call (int64_t* stack, int64_t offset) const {
     typedef void (*CodeFun)(int64_t* stack, int64_t offset);
 
     const auto codeFun = reinterpret_cast<CodeFun>(code);

@@ -12,16 +12,16 @@ struct Binary {
 
     Binary& operator= (const Binary&) = delete;
 
-    void write (const std::vector<uint8_t>& bytes);
+    void write (const std::vector<uint8_t>&);
 
-    void call (int64_t* stack, int64_t offset);
+    void call (int64_t*, int64_t) const;
 
     ~Binary();
 
 private:
-    void alloc (const std::vector<uint8_t>& bytes);
+    void alloc (const std::vector<uint8_t>&);
 
-    void refresh (const std::vector<uint8_t>& bytes);
+    void refresh (const std::vector<uint8_t>&);
 
     void dealloc ();
 

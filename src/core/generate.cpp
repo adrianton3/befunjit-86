@@ -67,7 +67,7 @@ void generate (
     }
 }
 
-void generate (Graph& graph, const StaticBindings& staticBindings, std::vector<uint8_t>& bytes) {
+void generate (const Graph& graph, const StaticBindings& staticBindings, std::vector<uint8_t>& bytes) {
     std::vector<PathLink> pathLinks;
 
     push::init(bytes);

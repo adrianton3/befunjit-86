@@ -44,7 +44,7 @@ Pathlet findPathlet (const Playfield& playfield, Cursor cursor) {
             return { std::move(entries), indexMaybe->second };
         }
 
-        map.insert({ cursor, index });
+        map[cursor] = index;
 
         entries.emplace_back(cursor, value, false);
 

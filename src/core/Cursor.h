@@ -61,9 +61,9 @@ struct Cursor {
     }
 };
 
-uint64_t pack (const Cursor& cursor);
+uint64_t pack (Cursor);
 
-Cursor unpack (uint64_t cursor);
+Cursor unpack (uint64_t);
 
 template<>
 struct std::hash<Cursor> {

@@ -19,7 +19,7 @@ Graph findGraph (const Playfield& playfield, const Cursor& cursor) {
 
         if (pathlet.loopbackIndex >= 0) {
             auto* path = new Path { std::move(pathlet.entries), pathlet.loopbackIndex };
-            map.insert({ preStart, path });
+            map[preStart] = path;
             return path;
         }
 
@@ -27,13 +27,13 @@ Graph findGraph (const Playfield& playfield, const Cursor& cursor) {
 
         if (pathletEntryEnd.value == '@') {
             auto* path = new Path { std::move(pathlet.entries) };
-            map.insert({ preStart, path });
+            map[preStart] = path;
             return path;
         }
 
         if (pathletEntryEnd.value == '_') {
             auto* path = new Path { std::move(pathlet.entries) };
-            map.insert({ preStart, path });
+            map[preStart] = path;
 
             Cursor preStartRight = pathletEntryEnd.cursor;
             preStartRight.directRight();
@@ -48,7 +48,7 @@ Graph findGraph (const Playfield& playfield, const Cursor& cursor) {
 
         if (pathletEntryEnd.value == '|') {
             auto* path = new Path { std::move(pathlet.entries) };
-            map.insert({ preStart, path });
+            map[preStart] = path;
 
             Cursor preStartDown = pathletEntryEnd.cursor;
             preStartDown.directDown();
@@ -63,7 +63,7 @@ Graph findGraph (const Playfield& playfield, const Cursor& cursor) {
 
         if (pathletEntryEnd.value == '?') {
             auto* path = new Path { std::move(pathlet.entries) };
-            map.insert({ preStart, path });
+            map[preStart] = path;
 
             Cursor preStartUp = pathletEntryEnd.cursor;
             preStartUp.directUp();
