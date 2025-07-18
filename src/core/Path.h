@@ -9,6 +9,16 @@
 struct Path;
 
 struct Path {
+    Path (std::vector<PathletEntry> _entries, int16_t _loopbackIndex = -1)
+    : entries { std::move(_entries) }
+    , next0 { nullptr }
+    , next1 { nullptr }
+    , next2 { nullptr }
+    , next3 { nullptr }
+    , loopbackIndex { _loopbackIndex }
+    , startIndex { 0 }
+    {}
+
     std::vector<PathletEntry> entries;
     Path* next0;
     Path* next1;
