@@ -8,9 +8,32 @@
 #include "parts/run.h"
 
 
-int main (int argc, char** argv) {
+void printUsage (char* argv[]) {
+    fprintf(
+        stderr,
+        "Usage:\n"
+        " %s [--stack-size 4096] <bf-file>\n"
+        "\n"
+        "Test helpers:\n"
+        " %s [--never-opt] [--always-opt] [--stack-size 4096] <bf-file>\n"
+        "\n"
+        " %s read-playfield <bf-file>\n"
+        " %s find-pathlet <bf-file>\n"
+        " %s find-graph <bf-file>\n"
+        " %s find-graph-optimize <bf-file>\n"
+        " %s run-line <bf-file>\n",
+        argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0]
+    );
+}
+
+int main (int argc, char* argv[]) {
     if (argc == 2) {
-        part::run(argv[1]);
+        if (strcmp(argv[1], "--help") == 0) {
+            printUsage(argv);
+        } else {
+            part::run(argv[1]);
+        }
+
         return 0;
     }
 
@@ -39,76 +62,51 @@ int main (int argc, char** argv) {
             part::runLine(argv[2]);
             return 0;
         }
-
-        if (strcmp(argv[1], "--no-opt") == 0) {
-            part::run(argv[2],{ 4096, false });
-            return 0;
-        }
     }
 
-    if (argc == 4) {
-        if (strcmp(argv[1], "--stack-size") == 0) {
+    part::RunOptions runOptions;
+
+    auto index = 0;
+    for (index = 1; index < argc - 1; index++) {
+        if (strcmp(argv[index], "--never-opt") == 0) {
+            runOptions.optimizationStrat = part::OptimizationStrat::Never;
+            continue;
+        }
+
+        if (strcmp(argv[index], "--always-opt") == 0) {
+            runOptions.optimizationStrat = part::OptimizationStrat::Always;
+            continue;
+        }
+
+        if (strcmp(argv[index], "--stack-size") == 0) {
+            index++;
+
+            if (index >= argc) {
+                fprintf(stderr, "Expected a value following --stack-size\n");
+                return 1;
+            }
+
             char* end;
-            int64_t size = strtol(argv[2], &end, 10);
-            if (*end || size < 1 || size > (1 << 24)) {
-                fprintf(stderr, "Expect stack-size to be a number between 1 and 16777216; got '%s' instead\n", argv[2]);
+            int64_t stackSize = strtol(argv[index], &end, 10);
+            if (*end || stackSize < 1 || stackSize > (1 << 24)) {
+                fprintf(stderr, "Expected stack-size to be a number between 1 and 16777216; got '%s' instead\n", argv[2]);
                 return 1;
             }
 
-            part::run(argv[3], { static_cast<int32_t>(size), true });
-            return 0;
+            runOptions.stackSize = stackSize;
+            continue;
         }
+
+        fprintf(stderr, "Unexpected argument '%s'\n", argv[index]);
+        printUsage(argv);
+        return 1;
     }
 
-    if (argc == 5) {
-        if (strcmp(argv[1], "--stack-size") == 0) {
-            char* end;
-            int64_t size = strtol(argv[2], &end, 10);
-            if (*end || size < 1 || size > (1 << 24)) {
-                fprintf(stderr, "Expect stack-size to be a number between 1 and 16777216; got '%s' instead\n", argv[2]);
-                return 1;
-            }
-
-            if (strcmp(argv[3], "--no-opt") == 0) {
-                fprintf(stderr, "Usage: %s [read-playfield/find-pathlet/find-graph/run-line] --stack-size <stack-size> --no-opt <bf-file>\n", argv[0]);
-                return 1;
-            }
-
-            part::run(argv[4], { static_cast<int32_t>(size), false });
-            return 0;
-        }
-
-        if (strcmp(argv[1], "--no-opt") == 0) {
-            if (strcmp(argv[2], "--stack-size") == 0) {
-                char* end;
-                int64_t size = strtol(argv[3], &end, 10);
-                if (*end || size < 1 || size > (1 << 24)) {
-                    fprintf(stderr, "Expect stack-size to be a number between 1 and 16777216; got '%s' instead\n", argv[3]);
-                    return 1;
-                }
-
-                part::run(argv[4], { static_cast<int32_t>(size), false });
-                return 0;
-            }
-        }
+    if (index >= argc) {
+        fprintf(stderr, "Expected a source file\n");
+        printUsage(argv);
+        return 1;
     }
 
-    fprintf(
-        stderr,
-        "Usage:\n"
-        " %s <bf-file>\n"
-        " %s --stack-size 4096 <bf-file>\n"
-        "\n"
-        "Test helpers:\n"
-        " %s --no-opt <bf-file>\n"
-        " %s --no-opt --stack-size 4096 <bf-file>\n"
-        "\n"
-        " %s read-playfield <bf-file>\n"
-        " %s find-pathlet <bf-file>\n"
-        " %s find-graph <bf-file>\n"
-        " %s find-graph-optimize <bf-file>\n"
-        " %s run-line <bf-file>\n",
-        argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0], argv[0]
-    );
-    return 1;
+    part::run(argv[index], runOptions);
 }

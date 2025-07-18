@@ -11,6 +11,7 @@ Boolfield boolfield;
 
 uint64_t putCursorPacked;
 bool compileRequest;
+constexpr auto compileCountThreshold = 10;
 
 int64_t bind::run::get (int64_t x, int64_t y) {
     return Playfield::isWithinBounds(x, y) ? playfield.getAtUnsafe(x, y) : 0;
@@ -94,12 +95,16 @@ void part::run (const std::string& file, RunOptions runOptions) {
     stash[1] = offset;
 
     compileRequest = true;
-    putCursorPacked = pack({ { 79, 0 }, { 1, 0 }});
+    putCursorPacked = pack({ { 79, 0 }, { 1, 0 } });
+
+    auto compileCount = 0;
 
     Binary binary;
 
     while (compileRequest) {
         compileRequest = false;
+
+        compileCount++;
 
         offset = stash[1];
 
@@ -109,10 +114,23 @@ void part::run (const std::string& file, RunOptions runOptions) {
 
         std::vector<uint8_t> bytes;
 
-        if (runOptions.optimize) {
-            generateOpt(graph, staticBindings, boolfield, bytes);
-        } else {
-            generate(graph, staticBindings, bytes);
+        switch (runOptions.optimizationStrat) {
+            case OptimizationStrat::Never:
+                generate(graph, staticBindings, bytes);
+                break;
+
+            case OptimizationStrat::Bail:
+                if (compileCount >= compileCountThreshold) {
+                    generate(graph, staticBindings, bytes);
+                } else {
+                    generateOpt(graph, staticBindings, boolfield, bytes);
+                }
+
+                break;
+
+            case OptimizationStrat::Always:
+                generateOpt(graph, staticBindings, boolfield, bytes);
+                break;
         }
 
         binary.write(bytes);

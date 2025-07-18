@@ -10,7 +10,7 @@
 
 
 template <uint64_t N>
-uint8_t getByte (uint64_t v) {
+constexpr uint8_t getByte (uint64_t v) {
     return (v >> (N * 8)) & 0xff;
 }
 

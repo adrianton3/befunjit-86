@@ -7,17 +7,29 @@ if [ ! -f "../test/spec/run-more/$1.bf" ]; then
   exit 1
 fi
 
-echo "jit, with optimizations"
+cooldown=10
+
+
+echo "jit"
 sudo perf stat -r 100 ../cmake-build-release/b86 ../test/spec/run-more/$1.bf > /dev/null
 
-echo "cooldown 2s"
-sleep 2
+echo "cooldown ${cooldown}s"
+sleep $cooldown
 
-echo "jit without optimizations"
-sudo perf stat -r 100 ../cmake-build-release/b86 --no-opt ../test/spec/run-more/$1.bf > /dev/null
 
-echo "cooldown 2s"
-sleep 2
+echo "jit, --always-opt"
+sudo perf stat -r 100 ../cmake-build-release/b86 --always-opt ../test/spec/run-more/$1.bf > /dev/null
+
+echo "cooldown ${cooldown}s"
+sleep $cooldown
+
+
+echo "jit --never-opt"
+sudo perf stat -r 100 ../cmake-build-release/b86 --never-opt ../test/spec/run-more/$1.bf > /dev/null
+
+echo "cooldown ${cooldown}s"
+sleep $cooldown
+
 
 echo "interpreter"
 sudo perf stat -r 100 ./interpreter/bfi ../test/spec/run-more/$1.bf > /dev/null

@@ -24,12 +24,19 @@ namespace bind::run {
 
 namespace part {
 
-    struct RunOptions {
-        int32_t stackSize;
-        bool optimize;
+    enum class OptimizationStrat {
+        Never,
+        Bail,
+        Always,
     };
 
-    void run (const std::string& file, RunOptions runOptions = { 4096, true });
+    struct RunOptions {
+        RunOptions() : stackSize { 4096 }, optimizationStrat { OptimizationStrat::Bail } {}
+        int32_t stackSize;
+        OptimizationStrat optimizationStrat;
+    };
+
+    void run (const std::string& file, RunOptions runOptions = {});
 
 }
 

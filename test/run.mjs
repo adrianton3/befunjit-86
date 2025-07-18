@@ -208,11 +208,11 @@ function runAll () {
 
     collect('find-graph', 'find-graph', (sourceFile) => ['find-graph', sourceFile], entries)
 
-    collect('run-line (no-opt)', 'run-line', (sourceFile) => ['run-line', sourceFile], entries)
+    collect('run-line (never-opt)', 'run-line', (sourceFile) => ['run-line', sourceFile], entries)
 
-    collect('run (no-opt)', 'run', (sourceFile) => ['--no-opt', sourceFile], entries)
+    collect('run (never-opt)', 'run', (sourceFile) => ['--never-opt', sourceFile], entries)
 
-    collect('run (more specs, no-opt)', 'run-more', (sourceFile) => ['--no-opt', sourceFile], entries)
+    collect('run (more specs, never-opt)', 'run-more', (sourceFile) => ['--never-opt', sourceFile], entries)
 
     collect('run (run-line specs)', 'run-line', (sourceFile) => [sourceFile], entries)
 

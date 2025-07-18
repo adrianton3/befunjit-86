@@ -65,7 +65,7 @@ Pathlet findPathlet (const Playfield& playfield, Cursor cursor) {
     }
 
     return { std::move(entries), -1 };
-};
+}
 
 std::string stringify (const PathletEntry& entry) {
     std::string str;
