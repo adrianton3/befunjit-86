@@ -18,7 +18,7 @@ Graph findGraph (const Playfield& playfield, const Cursor& cursor) {
         const auto pathlet = findPathlet(playfield, start);
 
         if (pathlet.loopbackIndex >= 0) {
-            auto* path = new Path { std::move(pathlet.entries), pathlet.loopbackIndex };
+            auto* path = new Path { pathlet.entries, nullptr, nullptr, nullptr, nullptr, pathlet.loopbackIndex, 0 };
             map.insert({ preStart, path });
             return path;
         }
@@ -26,13 +26,13 @@ Graph findGraph (const Playfield& playfield, const Cursor& cursor) {
         const PathletEntry& pathletEntryEnd = pathlet.entries.back();
 
         if (pathletEntryEnd.value == '@') {
-            auto* path = new Path { std::move(pathlet.entries) };
+            auto* path = new Path { pathlet.entries, nullptr, nullptr, nullptr, nullptr, -1, 0 };
             map.insert({ preStart, path });
             return path;
         }
 
         if (pathletEntryEnd.value == '_') {
-            auto* path = new Path { std::move(pathlet.entries) };
+            auto* path = new Path { pathlet.entries, nullptr, nullptr, nullptr, nullptr, -1, 0 };
             map.insert({ preStart, path });
 
             Cursor preStartRight = pathletEntryEnd.cursor;
@@ -47,7 +47,7 @@ Graph findGraph (const Playfield& playfield, const Cursor& cursor) {
         }
 
         if (pathletEntryEnd.value == '|') {
-            auto* path = new Path { std::move(pathlet.entries) };
+            auto* path = new Path { pathlet.entries, nullptr, nullptr, nullptr, nullptr, -1, 0 };
             map.insert({ preStart, path });
 
             Cursor preStartDown = pathletEntryEnd.cursor;
@@ -62,7 +62,7 @@ Graph findGraph (const Playfield& playfield, const Cursor& cursor) {
         }
 
         if (pathletEntryEnd.value == '?') {
-            auto* path = new Path { std::move(pathlet.entries) };
+            auto* path = new Path { pathlet.entries, nullptr, nullptr, nullptr, nullptr, -1, 0 };
             map.insert({ preStart, path });
 
             Cursor preStartUp = pathletEntryEnd.cursor;

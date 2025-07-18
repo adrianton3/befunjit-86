@@ -84,7 +84,7 @@ void part::runLine (const std::string& fileName) {
         });
     }
 
-    Path path { std::move(pathletEntries) };
+    Path path { std::move(pathletEntries), nullptr, nullptr, nullptr, nullptr, -1, 0 };
 
     int64_t stash[16];
 
