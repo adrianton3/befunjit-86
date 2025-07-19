@@ -58,24 +58,20 @@ Finally, one more pass aims to bypass the stack alltogether when executing some 
 
 ### Performance
 
-The first program to use as a benchmark is a mandelbrot set renderer (`test/spec/run-more/mandelbrot.bf`). `perf stat -r 100` reports
-+ 87.42 msec when running mandelbrot.bf through the interpreter
-+ 10.34 msec when running through the JIT with optimizations turned off
-+ 4.06 msec with optimizations turned on
+The script `./bench/run.sh <befunge-source-file>` runs `perf stat -r 100` on the JIT with a few arguments and the interpreter.
 
-In this test the JIT is ~21 times faster than the interpreter.
+The _mandelbrot_ and _snowflake_ programs were found in the wild:
+[mandelbrot](https://codegolf.stackexchange.com/questions/3105/generate-a-mandelbrot-fractal/106527#106527) and
+[snowflake](https://codegolf.stackexchange.com/questions/148206/the-quantum-drunkards-walk/148323#148323).
 
-The second program to use as a benchmark is `test/spec/run-more/count-down-mutate.bf` - this just counts down from 9 ** 4 to 0 but
-it does this by modifying its code for every iteration. `perf stat -r 100` reports
-+ 1.39 msec when running through the interpreter
-+ 29.98 msec when running through the JIT with optimizations turned off
-+ 35.49 msec with optimizations turned on
+The _count-down-mutate_ and _count-down-mutate-long_ programs were crafted to execute as slow as possible in the JIT.
+They were both designed to trigger as many recompilations as possible. 
 
-In this test the JIT is ~25 times slower than the interpreter. This test has been intentionally crafted to trigger as many recompilations
-as possible. The mandelbrot benchmark also reads and writes to the playfield but it does not trigger any recompilations.
+![perf stat -r 100 task-clock (msec)](https://github.com/user-attachments/assets/448051e7-5f08-4b67-92c4-66f0146fd627)
 
-Interestingly when skipping `mprotect` on the allocated code pages the times reported become 15.75 msec (without optimizations) and
-21.52 msec (with optimizations).
+For the two "natural" programs the JIT is ~21 times and ~15 times faster than the interpreter. The JIT with optimizations is ~2.5 faster than without.
+
+For the two JIT-breaking programs the interpreter is ~20 and ~34 times faster than the JIT.
 
 
 ### Building
