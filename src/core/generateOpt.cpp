@@ -1,3 +1,4 @@
+#include "CompType.h"
 #include "generate.h"
 #include "Pathlet.h"
 #include "push.h"
@@ -17,10 +18,7 @@ struct InstrStringifier {
     std::string operator() (const Div&) const { return std::string { "Div" }; }
     std::string operator() (const Mod&) const { return std::string { "Mod" }; }
     std::string operator() (const Not&) const { return std::string { "Not" }; }
-    std::string operator() (const Gt&) const { return std::string { "Gt" }; }
-    std::string operator() (const Gte&) const { return std::string { "Gte" }; }
-    std::string operator() (const Lt&) const { return std::string { "Lt" }; }
-    std::string operator() (const Lte&) const { return std::string { "Lte" }; }
+    std::string operator() (const Comp& comp) const { return std::string { std::string { "Comp<" } + stringify(comp.type) + ">" }; }
     std::string operator() (const Dup&) const { return std::string { "Dup" }; }
     std::string operator() (const Swap&) const { return std::string { "Swap" }; }
     std::string operator() (const Drop&) const { return std::string { "Drop" }; }
@@ -33,6 +31,8 @@ struct InstrStringifier {
     std::string operator() (const WriteInt64&) const { return std::string { "WriteInt64" }; }
     std::string operator() (const WriteChar&) const { return std::string { "WriteChar" }; }
     std::string operator() (const If&) const { return std::string { "If" }; }
+    std::string operator() (const CompIf& compIf) const { return std::string { "CompIf<" } + stringify(compIf.type) + ">"; }
+    std::string operator() (const Comp1If& comp1If) const { return std::string { "Comp1If<" } + stringify(comp1If.type) + ", " + std::to_string(comp1If.value) + ", " + std::to_string(comp1If.dup) + ">"; }
     std::string operator() (const Rand&) const { return std::string { "Rand" }; }
     std::string operator() (const End&) const { return std::string { "End" }; }
     std::string operator() (const ChainStart&) const { return std::string { "[" }; }
@@ -61,7 +61,7 @@ void translatePass (const std::vector<PathletEntry>& prev, std::vector<Instr>& n
             case '/': next.emplace_back(Div {}); break;
             case '%': next.emplace_back(Mod {}); break;
             case '!': next.emplace_back(Not {}); break;
-            case '`': next.emplace_back(Gt {}); break;
+            case '`': next.emplace_back(Comp { CompType::Gt }); break;
             case ':': next.emplace_back(Dup {}); break;
             case '\\': next.emplace_back(Swap {}); break;
             case '$': next.emplace_back(Drop {}); break;
@@ -78,6 +78,10 @@ void translatePass (const std::vector<PathletEntry>& prev, std::vector<Instr>& n
             default: break;
         }
     }
+}
+
+bool matchesUnsafe (const std::vector<Instr>& instructions, size_t index, InstrType i0) {
+    return instructions[index + 0].index() == static_cast<size_t>(i0);
 }
 
 bool matchesUnsafe (const std::vector<Instr>& instructions, size_t index, InstrType i0, InstrType i1) {
@@ -100,6 +104,10 @@ bool matchesUnsafe (const std::vector<Instr>& instructions, size_t index, InstrT
 
 int64_t getPushValue (Instr push) {
     return std::get<Push>(push).value;
+}
+
+CompType getCompType (Instr comp) {
+    return std::get<Comp>(comp).type;
 }
 
 uint64_t foldPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
@@ -245,8 +253,8 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
             // !(b>a)
             // b<=a
             // ab(>=)
-            if (matchesUnsafe(prev, index, InstrType::Swap, InstrType::Gt, InstrType::Not)) {
-                next.emplace_back(Gte {});
+            if (matchesUnsafe(prev, index, InstrType::Swap, InstrType::Comp, InstrType::Not) && getCompType(prev[index + 1]) == CompType::Gt) {
+                next.emplace_back(Comp { CompType::Gte });
                 index += 3;
                 continue;
             }
@@ -287,8 +295,8 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
             // b>a
             // a<b
             // ab(<)
-            if (matchesUnsafe(prev, index, InstrType::Swap, InstrType::Gt)) {
-                next.emplace_back(Lt {});
+            if (matchesUnsafe(prev, index, InstrType::Swap, InstrType::Comp) && getCompType(prev[index + 1]) == CompType::Gt) {
+                next.emplace_back(Comp { CompType::Lt });
                 index += 2;
                 continue;
             }
@@ -297,8 +305,8 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
             // !(a>b)
             // a<=b
             // ab(<=)
-            if (matchesUnsafe(prev, index, InstrType::Gt, InstrType::Not)) {
-                next.emplace_back(Lte {});
+            if (matchesUnsafe(prev, index, InstrType::Comp, InstrType::Not) && getCompType(prev[index + 0]) == CompType::Gt) {
+                next.emplace_back(Comp { CompType::Lte });
                 index += 2;
                 continue;
             }
@@ -374,6 +382,45 @@ void chainPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
     }
 }
 
+void ifPass (std::vector<Instr>& cur) {
+    if (cur.empty()) [[unlikely]] {
+        return;
+    }
+
+    const auto indexMaxM0 = cur.size();
+    const auto indexMaxM1 = indexMaxM0 - 1;
+    const auto indexMaxM2 = indexMaxM0 - 2;
+    const auto indexMaxM3 = indexMaxM0 - 3;
+    const auto indexMaxM4 = indexMaxM0 - 4;
+
+    if (!matchesUnsafe(cur, indexMaxM1, InstrType::If)) {
+        return;
+    }
+
+    if (!matchesUnsafe(cur, indexMaxM2, InstrType::Comp)) {
+        return;
+    }
+
+    const auto compType = getCompType(cur[indexMaxM2]);
+
+    if (matchesUnsafe(cur, indexMaxM3, InstrType::Push)) {
+        const auto value = getPushValue(cur[indexMaxM3]);
+
+        if (matchesUnsafe(cur, indexMaxM4, InstrType::Dup)) {
+            cur.erase(cur.end() - 3, cur.end()); // faster than resize ?? // this not really needed - codegen stops at if
+            cur[indexMaxM4] = Comp1If { compType, value, true };
+            return;
+        }
+
+        cur.erase(cur.end() - 2, cur.end());
+        cur[indexMaxM3] = Comp1If { compType, value, false };
+        return;
+    }
+
+    cur.pop_back();
+    cur[indexMaxM2] = CompIf { compType };
+}
+
 void optimize (const std::vector<PathletEntry>& entries, std::vector<Instr>& postFinals) {
     std::vector<Instr> firsts;
     translatePass(entries, firsts);
@@ -386,6 +433,7 @@ void optimize (const std::vector<PathletEntry>& entries, std::vector<Instr>& pos
     if (foldCountFirst == 0) {
         finalPass(seconds, finals);
         chainPass(finals, postFinals);
+        ifPass(postFinals);
         return;
     }
 
@@ -395,6 +443,7 @@ void optimize (const std::vector<PathletEntry>& entries, std::vector<Instr>& pos
     if (foldCountSecond == 0) {
         finalPass(thirds, finals);
         chainPass(finals, postFinals);
+        ifPass(postFinals);
         return;
     }
 
@@ -402,6 +451,7 @@ void optimize (const std::vector<PathletEntry>& entries, std::vector<Instr>& pos
     foldPass(thirds, fourths);
     finalPass(fourths, finals);
     chainPass(finals, postFinals);
+    ifPass(postFinals);
 }
 
 void generateOpt (
@@ -471,10 +521,7 @@ void generateOpt (
             case InstrType::Mod: push::mod(bytes); break;
 
             case InstrType::Not: push::not_(bytes); break;
-            case InstrType::Gt: push::gt(bytes); break;
-            case InstrType::Gte: push::gte(bytes); break;
-            case InstrType::Lt: push::lt(bytes); break;
-            case InstrType::Lte: push::lte(bytes); break;
+            case InstrType::Comp: push::comp(bytes, std::get<Comp>(instr).type); break;
 
             case InstrType::Dup: push::dup(bytes); break;
             case InstrType::Swap: push::swap(bytes); break;
@@ -515,9 +562,16 @@ void generateOpt (
             case InstrType::WriteInt64: push::write(bytes, staticBindings.stash, staticBindings.writeInt64); break;
             case InstrType::WriteChar: push::write(bytes, staticBindings.stash, staticBindings.writeChar); break;
 
-            case InstrType::If: push::if_(bytes, path, pathLinks); break;
-            case InstrType::Rand: push::rand(bytes, staticBindings.stash, staticBindings.rand4, path, pathLinks); break;
+            case InstrType::If: push::if_(bytes, path, pathLinks); return;
+            case InstrType::Rand: push::rand(bytes, staticBindings.stash, staticBindings.rand4, path, pathLinks); return;
             case InstrType::End: push::end(bytes, staticBindings.stash); return;
+
+            case InstrType::CompIf: push::compIf(bytes, std::get<CompIf>(instr).type, path, pathLinks); break;
+            case InstrType::Comp1If: {
+                const auto [type, value, dup] = std::get<Comp1If>(instr);
+                push::comp1If(bytes, type, value, dup, path, pathLinks);
+                return;
+            }
 
             default: break;
         }

@@ -137,7 +137,7 @@ void part::run (const std::string& file, RunOptions runOptions) {
 
         // {
         //     FILE* fd = fopen("binary", "wb");
-        //     fwrite(code, 1, bytes.size(), fd);
+        //     fwrite(bytes.data(), 1, bytes.size(), fd);
         //     fclose(fd);
         // }
 

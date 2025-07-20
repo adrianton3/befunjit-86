@@ -222,50 +222,19 @@ void push::not_ (std::vector<uint8_t>& bytes) {
     });
 }
 
- void push::gt (std::vector<uint8_t>& bytes) {
-    bytes.insert(bytes.end(), {
-        0x48, 0x8b, 0x4c, 0xf7, 0xf8,              // mov rcx, [rdi + rsi * 8 - 8]
-        0x48, 0x8b, 0x54, 0xf7, 0xf0,              // mov rdx, [rdi + rsi * 8 - 16]
-        0x48, 0xff, 0xce,                          // dec rsi
-        0x31, 0xc0,                                // xor eax, eax
-        0x48, 0x39, 0xca,                          // cmp rdx, rcx
-        0x0f, 0x9f, 0xc0,                          // setg al
-        0x48, 0x89, 0x44, 0xf7, 0xf8               // mov qword [rdi + rsi * 8 - 8], rax
-    });
-}
+void push::comp (std::vector<uint8_t>& bytes, CompType type) {
+    const uint8_t compByte = type == CompType::Gt ? 0x9f
+        : type == CompType::Gte ? 0x9d
+        : type == CompType::Lt ? 0x9c
+        : 0x9e;
 
-void push::gte (std::vector<uint8_t>& bytes) {
     bytes.insert(bytes.end(), {
         0x48, 0x8b, 0x4c, 0xf7, 0xf8,              // mov rcx, [rdi + rsi * 8 - 8]
         0x48, 0x8b, 0x54, 0xf7, 0xf0,              // mov rdx, [rdi + rsi * 8 - 16]
         0x48, 0xff, 0xce,                          // dec rsi
         0x31, 0xc0,                                // xor eax, eax
         0x48, 0x39, 0xca,                          // cmp rdx, rcx
-        0x0f, 0x9d, 0xc0,                          // setge al
-        0x48, 0x89, 0x44, 0xf7, 0xf8               // mov qword [rdi + rsi * 8 - 8], rax
-    });
-}
-
-void push::lt (std::vector<uint8_t>& bytes) {
-    bytes.insert(bytes.end(), {
-        0x48, 0x8b, 0x4c, 0xf7, 0xf8,              // mov rcx, [rdi + rsi * 8 - 8]
-        0x48, 0x8b, 0x54, 0xf7, 0xf0,              // mov rdx, [rdi + rsi * 8 - 16]
-        0x48, 0xff, 0xce,                          // dec rsi
-        0x31, 0xc0,                                // xor eax, eax
-        0x48, 0x39, 0xca,                          // cmp rdx, rcx
-        0x0f, 0x9c, 0xc0,                          // setl al
-        0x48, 0x89, 0x44, 0xf7, 0xf8               // mov qword [rdi + rsi * 8 - 8], rax
-    });
-}
-
-void push::lte (std::vector<uint8_t>& bytes) {
-    bytes.insert(bytes.end(), {
-        0x48, 0x8b, 0x4c, 0xf7, 0xf8,              // mov rcx, [rdi + rsi * 8 - 8]
-        0x48, 0x8b, 0x54, 0xf7, 0xf0,              // mov rdx, [rdi + rsi * 8 - 16]
-        0x48, 0xff, 0xce,                          // dec rsi
-        0x31, 0xc0,                                // xor eax, eax
-        0x48, 0x39, 0xca,                          // cmp rdx, rcx
-        0x0f, 0x9e, 0xc0,                          // setle al
+        0x0f, compByte, 0xc0,                      // setX al
         0x48, 0x89, 0x44, 0xf7, 0xf8               // mov qword [rdi + rsi * 8 - 8], rax
     });
 }
@@ -460,6 +429,75 @@ void push::if_ (std::vector<uint8_t>& bytes, const Path& path, std::vector<PathL
 
     pathLinks.push_back({ static_cast<int64_t>(bytes.size()) - 9, path.next0 });
     pathLinks.push_back({ static_cast<int64_t>(bytes.size()) - 4, path.next1 });
+}
+
+void compIfTail (std::vector<uint8_t>& bytes, CompType compType, const Path& path, std::vector<PathLink>& pathLinks) {
+    const uint8_t compByte = compType == CompType::Gt ? 0x8f
+        : compType == CompType::Gte ? 0x8d
+        : compType == CompType::Lt ? 0x8c
+        : 0x8e;
+
+    bytes.insert(bytes.end(), {
+        0x0f, compByte, 0x00, 0x00, 0x00, 0x00,    // jX with 32bit offset set to 00 00 00 00
+        0xe9, 0x00, 0x00, 0x00, 0x00               // jmp with 32bit offset set to 00 00 00 00
+    });
+
+    pathLinks.push_back({ static_cast<int64_t>(bytes.size()) - 9, path.next1 });
+    pathLinks.push_back({ static_cast<int64_t>(bytes.size()) - 4, path.next0 });
+}
+
+void push::compIf (std::vector<uint8_t>& bytes, CompType compType, const Path& path, std::vector<PathLink>& pathLinks) {
+    bytes.insert(bytes.end(), {
+        0x48, 0x83, 0xee, 0x02,                    // sub rsi, 2
+        0x48, 0x8b, 0x04, 0xf7,                    // mov rax, [rdi + rsi * 8]
+        0x48, 0x3b, 0x44, 0xf7, 0x08,              // cmp rax, [rdi + rsi * 8 + 8]
+    });
+
+    compIfTail(bytes, compType, path, pathLinks);
+}
+
+void push::comp1If (std::vector<uint8_t>& bytes, CompType compType, int64_t value, bool dup, const Path& path, std::vector<PathLink>& pathLinks) {
+    if (!dup) {
+        bytes.insert(bytes.end(), {
+            0x48, 0xff, 0xce                       // dec rsi
+        });
+    }
+
+    if (std::in_range<std::int8_t>(value)) [[likely]] {
+        if (dup) {
+            bytes.insert(bytes.end(), {
+                0x48, 0x83, 0x7c, 0xf7, 0xf8, getByte<0>(value), // cmp [rdi + rsi * 8 - 8], 8bit
+            });
+        } else {
+            bytes.insert(bytes.end(), {
+                0x48, 0x83, 0x3c, 0xf7, getByte<0>(value), // cmp [rdi + rsi * 8], 8bit
+            });
+        }
+    } else if (std::in_range<std::int32_t>(value)) [[likely]] {
+        if (dup) {
+            bytes.insert(bytes.end(), {
+                0x48, 0x81, 0x7c, 0xf7, 0xf8, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value), // cmp [rdi + rsi * 8 - 8], 32bit
+            });
+        } else {
+            bytes.insert(bytes.end(), {
+                0x48, 0x81, 0x3c, 0xf7, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value), // cmp [rdi + rsi * 8], 32bit
+            });
+        }
+    } else {
+        if (dup) {
+            bytes.insert(bytes.end(), {
+                0x48, 0xb8, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value), getByte<4>(value), getByte<5>(value), getByte<6>(value), getByte<7>(value), // mov rax, 64bit
+                0x48, 0x39, 0x44, 0xf7, 0xf8       // cmp [rdi + rsi * 8 - 8], rax
+            });
+        } else {
+            bytes.insert(bytes.end(), {
+                0x48, 0xb8, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value), getByte<4>(value), getByte<5>(value), getByte<6>(value), getByte<7>(value), // mov rax, 64bit
+                0x48, 0x39, 0x04, 0xf7,            // cmp [rdi + rsi * 8], rax
+            });
+        }
+    }
+
+    compIfTail(bytes, compType, path, pathLinks);
 }
 
 void push::rand (std::vector<uint8_t>& bytes, int64_t const* stash, Fun10 rand4, const Path& path, std::vector<PathLink>& pathLinks) {

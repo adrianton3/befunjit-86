@@ -15,6 +15,8 @@ add_executable(b86 src/main.cpp
         src/core/StaticBindings.h
         src/core/Graph.cpp
         src/core/Graph.h
+        src/core/CompType.cpp
+        src/core/CompType.h
         src/core/generate.cpp
         src/core/generate.h
         src/core/push.cpp

@@ -1,3 +1,4 @@
+#include "CompType.h"
 #include "push.h"
 
 #include "generate.h"
@@ -36,7 +37,7 @@ void generate (
             case '%': push::mod(bytes); break;
 
             case '!': push::not_(bytes); break;
-            case '`': push::gt(bytes); break;
+            case '`': push::comp(bytes, CompType::Gt); break;
 
             case ':': push::dup(bytes); break;
             case '\\': push::swap(bytes); break;
@@ -52,9 +53,9 @@ void generate (
             case '~': push::read(bytes, staticBindings.stash, staticBindings.readChar); break;
 
             case '_': [[fallthrough]];
-            case '|': push::if_(bytes, path, pathLinks); break;
+            case '|': push::if_(bytes, path, pathLinks); return;
 
-            case '?': push::rand(bytes, staticBindings.stash, staticBindings.rand4, path, pathLinks); break;
+            case '?': push::rand(bytes, staticBindings.stash, staticBindings.rand4, path, pathLinks); return;
 
             case '@': push::end(bytes, staticBindings.stash); return;
 

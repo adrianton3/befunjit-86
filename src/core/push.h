@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "CompType.h"
 #include "Cursor.h"
 #include "Path.h"
 #include "StaticBindings.h"
@@ -40,13 +41,7 @@ namespace push {
 
     void not_ (std::vector<uint8_t>& bytes);
 
-    void gt (std::vector<uint8_t>& bytes);
-
-    void gte (std::vector<uint8_t>& bytes);
-
-    void lt (std::vector<uint8_t>& bytes);
-
-    void lte (std::vector<uint8_t>& bytes);
+    void comp (std::vector<uint8_t>& bytes, CompType type);
 
     void dup (std::vector<uint8_t>& bytes);
 
@@ -73,6 +68,10 @@ namespace push {
     void rand (std::vector<uint8_t>& bytes, int64_t const* stash, Fun10 rand4, const Path& path, std::vector<PathLink>& pathLinks);
 
     void end (std::vector<uint8_t>& bytes, int64_t const* stash);
+
+    void compIf (std::vector<uint8_t>& bytes, CompType compType, const Path& path, std::vector<PathLink>& pathLinks);
+
+    void comp1If (std::vector<uint8_t>& bytes, CompType compType, int64_t value, bool dup, const Path& path, std::vector<PathLink>& pathLinks);
 
     void jump (std::vector<uint8_t>& bytes, Path* path, std::vector<PathLink>& pathLinks);
 
