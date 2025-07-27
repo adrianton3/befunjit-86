@@ -80,6 +80,21 @@ void translatePass (const std::vector<PathletEntry>& prev, std::vector<Instr>& n
     }
 }
 
+bool matchesUnsafe (const std::vector<Instr>& instructions, InstrType i0) {
+    return instructions.end()[-1].index() == static_cast<size_t>(i0);
+}
+
+bool matchesUnsafe (const std::vector<Instr>& instructions, InstrType i0, InstrType i1) {
+    return instructions.end()[-2].index() == static_cast<size_t>(i0) &&
+        instructions.end()[-1].index() == static_cast<size_t>(i1);
+}
+
+bool matchesUnsafe (const std::vector<Instr>& instructions, InstrType i0, InstrType i1, InstrType i2) {
+    return instructions.end()[-3].index() == static_cast<size_t>(i0) &&
+        instructions.end()[-2].index() == static_cast<size_t>(i1) &&
+        instructions.end()[-1].index() == static_cast<size_t>(i2);
+}
+
 bool matchesUnsafe (const std::vector<Instr>& instructions, size_t index, InstrType i0) {
     return instructions[index + 0].index() == static_cast<size_t>(i0);
 }
@@ -102,142 +117,226 @@ bool matchesUnsafe (const std::vector<Instr>& instructions, size_t index, InstrT
         instructions[index + 3].index() == static_cast<size_t>(i3);
 }
 
+InstrType getType (Instr instr) {
+    return static_cast<InstrType>(instr.index());
+}
+
 int64_t getPushValue (Instr push) {
     return std::get<Push>(push).value;
+}
+
+void setPushValue (Instr& push, int64_t value) {
+    std::get<Push>(push).value = value;
 }
 
 CompType getCompType (Instr comp) {
     return std::get<Comp>(comp).type;
 }
 
-uint64_t foldPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
-    const auto indexMaxM0 = prev.size();
-    const auto indexMaxM2 = indexMaxM0 - 2;
-    const auto indexMaxM3 = indexMaxM0 - 3;
-    const auto indexMaxM4 = indexMaxM0 - 4;
+void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
+    for (const auto& instr : prev) {
+        const auto instrType = getType(instr);
+        const auto stackSize = next.size();
 
-    uint64_t rewriteCount = 0;
+        if (stackSize >= 3) {
+            switch (instrType) {
+                case InstrType::Add:
+                    // a+b+
+                    // (... + a) + b
+                    // ... + (a + b)
+                    // (a+b)+
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Add, InstrType::Push)) {
+                        const auto result = getPushValue(next.end()[-3]) + getPushValue(next.end()[-1]);
+                        next.pop_back();
+                        setPushValue(next.end()[-2], result);
+                        continue;
+                    }
 
-    size_t index = 0;
+                    // a-b+
+                    // (... + -a) + b
+                    // ... + (-a + b)
+                    // (b-a)+
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Sub, InstrType::Push)) {
+                        const auto result = getPushValue(next.end()[-1]) - getPushValue(next.end()[-3]);
+                        next.pop_back();
+                        setPushValue(next.end()[-2], result);
+                        next.back() = Add {};
+                        continue;
+                    }
 
-    while (index < indexMaxM0) {
-        if (index < indexMaxM4) {
-            // a+b+
-            // (... + a) + b
-            // ... + (a + b)
-            // (a+b)+
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Add, InstrType::Push, InstrType::Add)) {
-                next.emplace_back(Push { getPushValue(prev[index + 0]) + getPushValue(prev[index + 2]) });
-                next.emplace_back(Add {});
-                rewriteCount++;
-                index += 4;
-                continue;
-            }
+                    break;
 
-            // a+b-
-            // (... + a) - b
-            // ... + (a - b)
-            // (a-b)+
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Add, InstrType::Push, InstrType::Sub)) {
-                next.emplace_back(Push { getPushValue(prev[index + 0]) - getPushValue(prev[index + 2]) });
-                next.emplace_back(Add {});
-                rewriteCount++;
-                index += 4;
-                continue;
-            }
+                case InstrType::Sub:
+                    // a+b-
+                    // (... + a) - b
+                    // ... + (a - b)
+                    // (a-b)+
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Add, InstrType::Push)) {
+                        const auto result = getPushValue(next.end()[-3]) - getPushValue(next.end()[-1]);
+                        next.pop_back();
+                        setPushValue(next.end()[-2], result);
+                        continue;
+                    }
 
-            // a-b+
-            // (... + -a) + b
-            // ... + (-a + b)
-            // (b-a)+
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Sub, InstrType::Push, InstrType::Add)) {
-                next.emplace_back(Push { getPushValue(prev[index + 2]) - getPushValue(prev[index + 0]) });
-                next.emplace_back(Add {});
-                rewriteCount++;
-                index += 4;
-                continue;
-            }
+                    // a-b-
+                    // (... + -a) + -b
+                    // ... + (-a + -b)
+                    // ... - (a + b)
+                    // (a+b)-
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Sub, InstrType::Push)) {
+                        const auto result = getPushValue(next.end()[-3]) - getPushValue(next.end()[-1]);
+                        next.pop_back();
+                        setPushValue(next.end()[-2], result);
+                        continue;
+                    }
 
-            // a-b-
-            // (... + -a) + -b
-            // ... + (-a + -b)
-            // ... - (a + b)
-            // (a+b)-
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Sub, InstrType::Push, InstrType::Sub)) {
-                next.emplace_back(Push { getPushValue(prev[index + 0]) + getPushValue(prev[index + 2]) });
-                next.emplace_back(Sub {});
-                rewriteCount++;
-                index += 4;
-                continue;
-            }
+                    break;
 
-            // a*b*
-            // (... * a) * b
-            // ... * (a * b)
-            // (a*b)*
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Mul, InstrType::Push, InstrType::Mul)) {
-                next.emplace_back(Push { getPushValue(prev[index + 0]) * getPushValue(prev[index + 2]) });
-                next.emplace_back(Mul {});
-                rewriteCount++;
-                index += 4;
-                continue;
-            }
-        }
+                case InstrType::Mul:
+                    // a*b*
+                    // (... * a) * b
+                    // ... * (a * b)
+                    // (a*b)*
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Mul, InstrType::Push)) {
+                        const auto result = getPushValue(next.end()[-3]) * getPushValue(next.end()[-1]);
+                        next.pop_back();
+                        setPushValue(next.end()[-2], result);
+                        continue;
+                    }
 
-        if (index < indexMaxM3) {
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Push, InstrType::Add)) {
-                next.emplace_back(Push { getPushValue(prev[index + 0]) + getPushValue(prev[index + 1]) });
-                rewriteCount++;
-                index += 3;
-                continue;
-            }
+                    break;
 
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Push, InstrType::Sub)) {
-                next.emplace_back(Push { getPushValue(prev[index + 0]) - getPushValue(prev[index + 1]) });
-                rewriteCount++;
-                index += 3;
-                continue;
-            }
-
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Push, InstrType::Mul)) {
-                next.emplace_back(Push { getPushValue(prev[index + 0]) * getPushValue(prev[index + 1]) });
-                rewriteCount++;
-                index += 3;
-                continue;
-            }
-
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Swap, InstrType::Sub) && getPushValue(prev[index + 0]) == 0) {
-                next.emplace_back(Push { -1 });
-                next.emplace_back(Mul {});
-                rewriteCount++;
-                index += 3;
-                continue;
+                default:; // nothing
             }
         }
 
-        if (index < indexMaxM2) {
-            if (matchesUnsafe(prev, index, InstrType::Dup, InstrType::Add)) {
-                next.emplace_back(Push { 2 });
-                next.emplace_back(Mul {});
-                rewriteCount++;
-                index += 2;
-                continue;
-            }
+        if (stackSize >= 2) {
+            switch (instrType) {
+                case InstrType::Add:
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Push)) {
+                        const auto result = getPushValue(next.end()[-2]) + getPushValue(next.end()[-1]);
+                        next.pop_back();
+                        setPushValue(next.back(), result);
+                        continue;
+                    }
 
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Dup)) {
-                next.emplace_back(prev[index + 0]);
-                next.emplace_back(prev[index + 0]);
-                rewriteCount++;
-                index += 2;
-                continue;
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Get2)) {
+                        std::iter_swap(next.end() - 2, next.end() - 1);
+                        next.push_back(instr);
+                        continue;
+                    }
+
+                    break;
+
+                case InstrType::Sub:
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Push)) {
+                        const auto result = getPushValue(next.end()[-2]) - getPushValue(next.end()[-1]);
+                        next.pop_back();
+                        setPushValue(next.back(), result);
+                        continue;
+                    }
+
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Swap) && getPushValue(next.end()[-2]) == 0) {
+                        setPushValue(next.end()[-2], -1);
+                        next.back() = Mul {};
+                        continue;
+                    }
+
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Get2)) {
+                        std::iter_swap(next.end() - 2, next.end() - 1);
+                        next.emplace_back(SubRev {});
+                        continue;
+                    }
+
+                    break;
+
+                case InstrType::Mul:
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Push)) {
+                        const auto product = getPushValue(next.end()[-2]) * getPushValue(next.end()[-1]);
+                        next.pop_back();
+                        std::get<Push>(next.back()).value = product;
+                        continue;
+                    }
+
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Get2)) {
+                        std::iter_swap(next.end() - 2, next.end() - 1);
+                        next.push_back(instr);
+                        continue;
+                    }
+
+                    break;
+
+                case InstrType::Swap:
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Push)) {
+                        std::iter_swap(next.end() - 2, next.end() - 1);
+                        continue;
+                    }
+
+                    break;
+
+                case InstrType::Get:
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Push)) {
+                        const auto x = getPushValue(next.end()[-2]);
+                        const auto y = getPushValue(next.end()[-1]);
+                        next.pop_back();
+                        next.back() = Get2 { x, y };
+                        continue;
+                    }
+
+                    break;
+
+                case InstrType::Put:
+                    if (matchesUnsafe(next, InstrType::Push, InstrType::Push)) {
+                        const auto x = getPushValue(next.end()[-2]);
+                        const auto y = getPushValue(next.end()[-1]);
+                        next.pop_back();
+                        next.back() = Put2 { x, y, std::get<Put>(instr).cursor };
+                        continue;
+                    }
+
+                    break;
+
+                default:; // nothing
             }
         }
 
-        next.push_back(prev[index]);
-        index++;
+        if (stackSize >= 1) {
+            switch (instrType) {
+                case InstrType::Add:
+                    if (matchesUnsafe(next, InstrType::Dup)) {
+                        next.end()[-1] = Push { 2 };
+                        next.emplace_back(Mul {});
+                        continue;
+                    }
+                    break;
+
+                case InstrType::Dup:
+                    if (matchesUnsafe(next, InstrType::Push)) {
+                        next.push_back(next.back());
+                        continue;
+                    }
+                    break;
+
+                case InstrType::Swap:
+                    if (matchesUnsafe(next, InstrType::Swap)) {
+                        next.pop_back();
+                        continue;
+                    }
+                    break;
+
+                case InstrType::Drop:
+                    if (matchesUnsafe(next, InstrType::Dup)) {
+                        next.pop_back();
+                        continue;
+                    }
+                    break;
+
+                default:; // nothing
+            }
+        }
+
+        next.push_back(instr);
     }
-
-    return rewriteCount;
 }
 
 void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
@@ -426,30 +525,10 @@ void optimize (const std::vector<PathletEntry>& entries, std::vector<Instr>& pos
     translatePass(entries, firsts);
 
     std::vector<Instr> seconds;
-    const auto foldCountFirst = foldPass(firsts, seconds);
+    stackPass(firsts, seconds);
 
     std::vector<Instr> finals;
-
-    if (foldCountFirst == 0) {
-        finalPass(seconds, finals);
-        chainPass(finals, postFinals);
-        ifPass(postFinals);
-        return;
-    }
-
-    std::vector<Instr> thirds;
-    const auto foldCountSecond = foldPass(seconds, thirds);
-
-    if (foldCountSecond == 0) {
-        finalPass(thirds, finals);
-        chainPass(finals, postFinals);
-        ifPass(postFinals);
-        return;
-    }
-
-    std::vector<Instr> fourths;
-    foldPass(thirds, fourths);
-    finalPass(fourths, finals);
+    finalPass(seconds, finals);
     chainPass(finals, postFinals);
     ifPass(postFinals);
 }
