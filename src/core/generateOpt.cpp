@@ -31,6 +31,7 @@ struct InstrStringifier {
     std::string operator() (const WriteInt64&) const { return std::string { "WriteInt64" }; }
     std::string operator() (const WriteChar&) const { return std::string { "WriteChar" }; }
     std::string operator() (const If&) const { return std::string { "If" }; }
+    std::string operator() (const NotIf& notIf) const { return std::string { "NotIf<" } + std::to_string(notIf.dup) + ">"; }
     std::string operator() (const CompIf& compIf) const { return std::string { "CompIf<" } + stringify(compIf.type) + ">"; }
     std::string operator() (const Comp1If& comp1If) const { return std::string { "Comp1If<" } + stringify(comp1If.type) + ", " + std::to_string(comp1If.value) + ", " + std::to_string(comp1If.dup) + ">"; }
     std::string operator() (const Rand&) const { return std::string { "Rand" }; }
@@ -496,28 +497,39 @@ void ifPass (std::vector<Instr>& cur) {
         return;
     }
 
-    if (!matchesUnsafe(cur, indexMaxM2, InstrType::Comp)) {
-        return;
-    }
+    if (matchesUnsafe(cur, indexMaxM2, InstrType::Comp)) {
+        const auto compType = getCompType(cur[indexMaxM2]);
 
-    const auto compType = getCompType(cur[indexMaxM2]);
+        if (matchesUnsafe(cur, indexMaxM3, InstrType::Push)) {
+            const auto value = getPushValue(cur[indexMaxM3]);
 
-    if (matchesUnsafe(cur, indexMaxM3, InstrType::Push)) {
-        const auto value = getPushValue(cur[indexMaxM3]);
+            if (matchesUnsafe(cur, indexMaxM4, InstrType::Dup)) {
+                cur.erase(cur.end() - 3, cur.end()); // faster than resize ?? // this not really needed - codegen stops at if
+                cur[indexMaxM4] = Comp1If { compType, value, true };
+                return;
+            }
 
-        if (matchesUnsafe(cur, indexMaxM4, InstrType::Dup)) {
-            cur.erase(cur.end() - 3, cur.end()); // faster than resize ?? // this not really needed - codegen stops at if
-            cur[indexMaxM4] = Comp1If { compType, value, true };
+            cur.erase(cur.end() - 2, cur.end());
+            cur[indexMaxM3] = Comp1If { compType, value, false };
             return;
         }
 
-        cur.erase(cur.end() - 2, cur.end());
-        cur[indexMaxM3] = Comp1If { compType, value, false };
+        cur.pop_back();
+        cur[indexMaxM2] = CompIf { compType };
         return;
     }
 
-    cur.pop_back();
-    cur[indexMaxM2] = CompIf { compType };
+    if (matchesUnsafe(cur, indexMaxM2, InstrType::Not)) {
+        if (matchesUnsafe(cur, indexMaxM3, InstrType::Dup)) {
+            cur.erase(cur.end() - 2, cur.end());
+            cur[indexMaxM3] = NotIf { true };
+            return;
+        }
+
+        cur.pop_back();
+        cur[indexMaxM2] = NotIf { false };
+        return;
+    }
 }
 
 void optimize (const std::vector<PathletEntry>& entries, std::vector<Instr>& postFinals) {
@@ -645,6 +657,7 @@ void generateOpt (
             case InstrType::Rand: push::rand(bytes, staticBindings.stash, staticBindings.rand4, path, pathLinks); return;
             case InstrType::End: push::end(bytes, staticBindings.stash); return;
 
+            case InstrType::NotIf: push::notIf(bytes, std::get<NotIf>(instr).dup, path, pathLinks); break;
             case InstrType::CompIf: push::compIf(bytes, std::get<CompIf>(instr).type, path, pathLinks); break;
             case InstrType::Comp1If: {
                 const auto [type, value, dup] = std::get<Comp1If>(instr);

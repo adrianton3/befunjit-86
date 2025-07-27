@@ -17,7 +17,7 @@ enum class InstrType : uint8_t {
     ReadInt64, ReadChar,
     WriteInt64, WriteChar,
     If, Rand, End,
-    CompIf, Comp1If,
+    NotIf, CompIf, Comp1If,
     ChainStart, ChainEnd
 };
 
@@ -53,6 +53,7 @@ struct If {};
 struct Rand {};
 struct End {};
 
+struct NotIf { bool dup; };
 struct CompIf { CompType type; };
 struct Comp1If { CompType type; int64_t value; bool dup; };
 
@@ -68,7 +69,7 @@ typedef std::variant<
     ReadInt64, ReadChar,
     WriteInt64, WriteChar,
     If, Rand, End,
-    CompIf, Comp1If,
+    NotIf, CompIf, Comp1If,
     ChainStart, ChainEnd
 > Instr;
 

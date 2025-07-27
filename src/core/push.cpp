@@ -431,6 +431,30 @@ void push::if_ (std::vector<uint8_t>& bytes, const Path& path, std::vector<PathL
     pathLinks.push_back({ static_cast<int64_t>(bytes.size()) - 4, path.next1 });
 }
 
+void push::notIf (std::vector<uint8_t>& bytes, bool dup, const Path& path, std::vector<PathLink>& pathLinks) {
+    if (dup) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x8b, 0x44, 0xf7, 0xf8,              // mov rax, [rdi + rsi * 8 - 8]
+            0x48, 0x85, 0xc0,                          // test rax, rax
+
+            0x0F, 0x84, 0x00, 0x00, 0x00, 0x00,        // jz with 32bit offset set to 00 00 00 00
+            0xE9, 0x00, 0x00, 0x00, 0x00               // jmp with 32bit offset set to 00 00 00 00
+        });
+    } else {
+        bytes.insert(bytes.end(), {
+            0x48, 0x8b, 0x44, 0xf7, 0xf8,              // mov rax, [rdi + rsi * 8 - 8]
+            0x48, 0xff, 0xce,                          // dec rsi
+            0x48, 0x85, 0xc0,                          // test rax, rax
+
+            0x0F, 0x84, 0x00, 0x00, 0x00, 0x00,        // jz with 32bit offset set to 00 00 00 00
+            0xE9, 0x00, 0x00, 0x00, 0x00               // jmp with 32bit offset set to 00 00 00 00
+        });
+    }
+
+    pathLinks.push_back({ static_cast<int64_t>(bytes.size()) - 9, path.next1 });
+    pathLinks.push_back({ static_cast<int64_t>(bytes.size()) - 4, path.next0 });
+}
+
 void compIfTail (std::vector<uint8_t>& bytes, CompType compType, const Path& path, std::vector<PathLink>& pathLinks) {
     const uint8_t compByte = compType == CompType::Gt ? 0x8f
         : compType == CompType::Gte ? 0x8d

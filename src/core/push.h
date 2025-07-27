@@ -69,6 +69,8 @@ namespace push {
 
     void end (std::vector<uint8_t>& bytes, int64_t const* stash);
 
+    void notIf (std::vector<uint8_t>& bytes, bool dup, const Path& path, std::vector<PathLink>& pathLinks);
+
     void compIf (std::vector<uint8_t>& bytes, CompType compType, const Path& path, std::vector<PathLink>& pathLinks);
 
     void comp1If (std::vector<uint8_t>& bytes, CompType compType, int64_t value, bool dup, const Path& path, std::vector<PathLink>& pathLinks);
