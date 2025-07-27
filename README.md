@@ -34,13 +34,16 @@ All 3 paths can be compiled separately; the jump targets can be patched in after
 
 `^<v>#"` and ` ` do not generate any code and already a compiled path requires less steps/operations than an interpreter.
 
-One of the code generators performs a few passes of constant folding:
+The first optimizing pass performs constant folding:
 + sequences like `12+` rewrite to `3`; the same is done for `-` and `*`
-+ `1+2+` becomes `3+`; the same is done for the combinations of `+` and `-`
++ `1+2+` becomes `3+`; the same is done for combinations of `+` and `-`
 + `2*3*` becomes `6*`
++ `abcg*` becomes `bcga*`; this allows strength reduction in a later pass
 + `:+` becomes `2*`
 + `0\-` becomes `(-1)*`
 + `1:` becomes `11`; even though `1:` does not typically appear in befunge source code, it can result from previous fold passes
++ `\\` becomes ``
++ `:$` becomes ``
 
 These are followed by a pass that performs strength reduction:
 + `abg` where `a` and `b` are known at compile time generate much less code than in the general case
