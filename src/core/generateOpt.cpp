@@ -16,6 +16,7 @@ struct InstrStringifier {
     std::string operator() (const Mul1& mul1) const { return std::string { "Mul1<" } + std::to_string(mul1.value) + ">"; }
     std::string operator() (const Sqr&) const { return std::string { "Sqr" }; }
     std::string operator() (const Div&) const { return std::string { "Div" }; }
+    std::string operator() (const Div1& div1) const { return std::string { "Div1<" + std::to_string(div1.value) + ">" }; }
     std::string operator() (const Mod&) const { return std::string { "Mod" }; }
     std::string operator() (const Not&) const { return std::string { "Not" }; }
     std::string operator() (const Comp& comp) const { return std::string { std::string { "Comp<" } + stringify(comp.type) + ">" }; }
@@ -391,6 +392,12 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                 continue;
             }
 
+            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Div)) {
+                next.emplace_back(Div1 { getPushValue(prev[index + 0]) });
+                index += 2;
+                continue;
+            }
+
             // ab\`
             // b>a
             // a<b
@@ -609,6 +616,7 @@ void generateOpt (
             case InstrType::Mul1: push::mul1(bytes, std::get<Mul1>(instr).value); break;
             case InstrType::Sqr: push::sqr(bytes); break;
             case InstrType::Div: push::div(bytes); break;
+            case InstrType::Div1: push::div1(bytes, std::get<Div1>(instr).value); break;
             case InstrType::Mod: push::mod(bytes); break;
 
             case InstrType::Not: push::not_(bytes); break;

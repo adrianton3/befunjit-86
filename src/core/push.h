@@ -37,6 +37,8 @@ namespace push {
 
     void div (std::vector<uint8_t>& bytes);
 
+    void div1 (std::vector<uint8_t>& bytes, int64_t value);
+
     void mod (std::vector<uint8_t>& bytes);
 
     void not_ (std::vector<uint8_t>& bytes);

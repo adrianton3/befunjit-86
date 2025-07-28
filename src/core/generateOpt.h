@@ -10,7 +10,7 @@
 
 enum class InstrType : uint8_t {
     Push,
-    Add, Add1, Sub, SubRev, Mul, Mul1, Sqr, Div, Mod,
+    Add, Add1, Sub, SubRev, Mul, Mul1, Sqr, Div, Div1, Mod,
     Not, Comp,
     Dup, Swap, Drop,
     Get, Get2, Put, Put2,
@@ -30,6 +30,7 @@ struct Mul {};
 struct Mul1 { int64_t value; };
 struct Sqr {};
 struct Div {};
+struct Div1 { int64_t value; };
 struct Mod {};
 
 struct Not {};
@@ -62,7 +63,7 @@ struct ChainEnd {};
 
 typedef std::variant<
     Push,
-    Add, Add1, Sub, SubRev, Mul, Mul1, Sqr, Div, Mod,
+    Add, Add1, Sub, SubRev, Mul, Mul1, Sqr, Div, Div1, Mod,
     Not, Comp,
     Dup, Swap, Drop,
     Get, Get2, Put, Put2,
