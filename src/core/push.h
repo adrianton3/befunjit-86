@@ -41,6 +41,8 @@ namespace push {
 
     void mod (std::vector<uint8_t>& bytes);
 
+    void mod1 (std::vector<uint8_t>& bytes, int64_t value);
+
     void not_ (std::vector<uint8_t>& bytes);
 
     void comp (std::vector<uint8_t>& bytes, CompType type);

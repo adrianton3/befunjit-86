@@ -251,7 +251,6 @@ void push::div1 (std::vector<uint8_t>& bytes, int64_t value) {
     });
 }
 
-
 void push::mod (std::vector<uint8_t>& bytes) {
     bytes.insert(bytes.end(), {
         0x48, 0x8b, 0x44, 0xf7, 0xf0,              // mov rax, [rdi + rsi * 8 - 16]
@@ -259,6 +258,52 @@ void push::mod (std::vector<uint8_t>& bytes) {
         0x48, 0xf7, 0x7c, 0xf7, 0xf8,              // idiv qword [rdi + rsi * 8 - 8]
         0x48, 0x89, 0x54, 0xf7, 0xf0,              // mov [rdi + rsi * 8 - 16], rdx
         0x48, 0xff, 0xce                           // dec rsi
+    });
+}
+
+void push::mod1 (std::vector<uint8_t>& bytes, int64_t value) {
+    if (value == 1) {
+        bytes.insert(bytes.end(), {
+            0x48, 0xc7, 0x44, 0xf7, 0xf8, 0x00, 0x00, 0x00, 0x00 // mov [rdi + rsi * 8 - 8], 0
+        });
+        return;
+    }
+
+    if (value == 2) {
+        bytes.insert(bytes.end(), {
+            0x48, 0x8b, 0x44, 0xf7, 0xf8,          // mov rax, [rdi + rsi * 8 - 8]
+            0x48, 0x89, 0xc1,                      // mov rcx, rax
+            0x48, 0xc1, 0xe9, 0x3f,                // shr rcx, 63
+            0x48, 0x01, 0xc1,                      // add rcx, rax
+            0x48, 0x83, 0xe1, 0xfe,                // and rcx, 0b111...1110
+            0x48, 0x29, 0xc8,                      // sub rax, rcx
+            0x48, 0x89, 0x44, 0xf7, 0xf8           // mov [rdi + rsi * 8 - 8], rax
+        });
+        return;
+    }
+
+    if (value > 0 && (value & (value - 1)) == 0) {
+        // powers of two
+        const auto valueM1 = value - 1;
+        const auto valueI = -value;
+        bytes.insert(bytes.end(), {
+            0x48, 0x8b, 0x44, 0xf7, 0xf8,          // mov rax, [rdi + rsi * 8 - 8]
+            0x48, 0x8d, 0x88, getByte<0>(valueM1), getByte<1>(valueM1), getByte<2>(valueM1), getByte<3>(valueM1), // lea rcx, [rax + (value-1)]
+            0x48, 0x85, 0xc0,                      // test rax, rax
+            0x48, 0x0f, 0x49, 0xc8,                // cmovns rcx, rax
+            0x48, 0x81, 0xe1, getByte<0>(valueI), getByte<1>(valueI), getByte<2>(valueI), getByte<3>(valueI), // and rcx, -value
+            0x48, 0x29, 0xc8,                      // sub rax, rcx
+            0x48, 0x89, 0x44, 0xf7, 0xf8           // mov [rdi + rsi * 8 - 8], rax
+        });
+        return;
+    }
+
+    bytes.insert(bytes.end(), {
+        0x48, 0xb9, getByte<0>(value), getByte<1>(value), getByte<2>(value), getByte<3>(value), getByte<4>(value), getByte<5>(value), getByte<6>(value), getByte<7>(value), // mov rcx, 64bit
+        0x48, 0x8b, 0x44, 0xf7, 0xf8,              // mov rax, [rdi + rsi * 8 - 8]
+        0x48, 0x99,                                // cqo
+        0x48, 0xf7, 0xf9,                          // idiv rcx
+        0x48, 0x89, 0x54, 0xf7, 0xf8,              // mov [rdi + rsi * 8 - 8], rdx
     });
 }
 
@@ -348,7 +393,7 @@ void push::get2 (std::vector<uint8_t>& bytes, int64_t const* playfieldData, uint
     bytes.insert(bytes.end(), {
         0x48, 0xb8, getByte<0>(playfieldDataAddress), getByte<1>(playfieldDataAddress), getByte<2>(playfieldDataAddress), getByte<3>(playfieldDataAddress), getByte<4>(playfieldDataAddress), getByte<5>(playfieldDataAddress), getByte<6>(playfieldDataAddress), getByte<7>(playfieldDataAddress), // mov rax, playfieldDataAddress
         0x48, 0x8b, 0x90, getByte<0>(offsetFlat), getByte<1>(offsetFlat), getByte<2>(offsetFlat), getByte<3>(offsetFlat), // mov rdx, [rax + offsetFlat]
-        0x48, 0x89, 0x14, 0xf7,                    // mov [rdi + rsi * 8 - 8], rdx
+        0x48, 0x89, 0x14, 0xf7,                    // mov [rdi + rsi * 8], rdx
         0x48, 0xff, 0xc6,                          // inc rsi
     });
 }

@@ -18,6 +18,7 @@ struct InstrStringifier {
     std::string operator() (const Div&) const { return std::string { "Div" }; }
     std::string operator() (const Div1& div1) const { return std::string { "Div1<" + std::to_string(div1.value) + ">" }; }
     std::string operator() (const Mod&) const { return std::string { "Mod" }; }
+    std::string operator() (const Mod1& mod1) const { return std::string { "Mod1<" + std::to_string(mod1.value) + ">" }; }
     std::string operator() (const Not&) const { return std::string { "Not" }; }
     std::string operator() (const Comp& comp) const { return std::string { std::string { "Comp<" } + stringify(comp.type) + ">" }; }
     std::string operator() (const Dup&) const { return std::string { "Dup" }; }
@@ -398,6 +399,12 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                 continue;
             }
 
+            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Mod)) {
+                next.emplace_back(Mod1 { getPushValue(prev[index + 0]) });
+                index += 2;
+                continue;
+            }
+
             // ab\`
             // b>a
             // a<b
@@ -618,6 +625,7 @@ void generateOpt (
             case InstrType::Div: push::div(bytes); break;
             case InstrType::Div1: push::div1(bytes, std::get<Div1>(instr).value); break;
             case InstrType::Mod: push::mod(bytes); break;
+            case InstrType::Mod1: push::mod1(bytes, std::get<Mod1>(instr).value); break;
 
             case InstrType::Not: push::not_(bytes); break;
             case InstrType::Comp: push::comp(bytes, std::get<Comp>(instr).type); break;
