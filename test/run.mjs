@@ -220,6 +220,12 @@ function runAll () {
 
     collect('run (more specs)', 'run-more', (sourceFile) => [sourceFile], entries)
 
+    collect('run (run-line specs)', 'run-line', (sourceFile) => ['--no-interpreter', sourceFile], entries)
+
+    collect('run', 'run', (sourceFile) => ['--no-interpreter', sourceFile], entries)
+
+    collect('run (more specs)', 'run-more', (sourceFile) => ['--no-interpreter', sourceFile], entries)
+
     consume(entries)
 }
 

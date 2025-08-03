@@ -78,6 +78,11 @@ int main (int argc, char* argv[]) {
             continue;
         }
 
+        if (strcmp(argv[index], "--no-interpreter") == 0) {
+            runOptions.startWithInterpreter = false;
+            continue;
+        }
+
         if (strcmp(argv[index], "--stack-size") == 0) {
             index++;
 

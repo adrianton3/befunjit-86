@@ -31,9 +31,15 @@ namespace part {
     };
 
     struct RunOptions {
-        RunOptions() : stackSize { 4096 }, optimizationStrat { OptimizationStrat::Bail } {}
+        RunOptions ()
+        : stackSize { 4096 }
+        , optimizationStrat { OptimizationStrat::Bail }
+        , startWithInterpreter { true }
+        {}
+
         int32_t stackSize;
         OptimizationStrat optimizationStrat;
+        bool startWithInterpreter;
     };
 
     void run (const std::string& file, RunOptions runOptions = {});

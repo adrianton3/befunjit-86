@@ -1,6 +1,7 @@
 #include "../core/Binary.h"
 #include "../core/generate.h"
 #include "../core/generateOpt.h"
+#include "../core/interpret.h"
 #include "../core/readPlayfield.h"
 
 #include "run.h"
@@ -96,6 +97,17 @@ void part::run (const std::string& file, RunOptions runOptions) {
 
     compileRequest = true;
     putCursorPacked = pack({ { 79, 0 }, { 1, 0 } });
+
+    if (runOptions.startWithInterpreter) {
+        const auto result = interpret(playfield, Cursor { { 0, 0 }, { 1, 0 } }, &stack[runOptions.stackSize], offset, staticBindings, 100);
+        if (result.done) {
+            printf("\n");
+            return;
+        }
+        offset = result.offset;
+        stash[1] = offset;
+        putCursorPacked = pack(result.cursor);
+    }
 
     auto compileCount = 0;
 

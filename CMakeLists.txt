@@ -42,4 +42,6 @@ add_executable(b86 src/main.cpp
         src/parts/findGraphOptimize.cpp
         src/parts/findGraphOptimize.h
         src/core/Binary.cpp
-        src/core/Binary.h)
+        src/core/Binary.h
+        src/core/interpret.cpp
+        src/core/interpret.h)
