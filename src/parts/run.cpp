@@ -6,13 +6,16 @@
 
 #include "run.h"
 
+#include <limits>
+
 
 Playfield playfield;
 Boolfield boolfield;
 
 uint64_t putCursorPacked;
 bool compileRequest;
-constexpr auto compileCountThreshold = 10;
+constexpr auto compileCountNooptThreshold = 10;
+constexpr auto compileCountInterpretThreshold = compileCountNooptThreshold + 10;
 
 int64_t bind::run::get (int64_t x, int64_t y) {
     return Playfield::isWithinBounds(x, y) ? playfield.getAtUnsafe(x, y) : 0;
@@ -96,7 +99,6 @@ void part::run (const std::string& file, RunOptions runOptions) {
     stash[1] = offset;
 
     compileRequest = true;
-    putCursorPacked = pack({ { 79, 0 }, { 1, 0 } });
 
     if (runOptions.startWithInterpreter) {
         const auto result = interpret(playfield, Cursor { { 0, 0 }, { 1, 0 } }, &stack[runOptions.stackSize], offset, staticBindings, 100);
@@ -107,6 +109,8 @@ void part::run (const std::string& file, RunOptions runOptions) {
         offset = result.offset;
         stash[1] = offset;
         putCursorPacked = pack(result.cursor);
+    } else {
+        putCursorPacked = pack({ { 79, 0 }, { 1, 0 } });
     }
 
     auto compileCount = 0;
@@ -120,6 +124,12 @@ void part::run (const std::string& file, RunOptions runOptions) {
 
         offset = stash[1];
 
+        if (runOptions.fallbackToInterpreter && compileCount >= compileCountInterpretThreshold) {
+            interpret(playfield, unpack(putCursorPacked), &stack[runOptions.stackSize], offset, staticBindings, std::numeric_limits<uint64_t>::max());
+            printf("\n");
+            return;
+        }
+
         auto graph = findGraph(playfield, unpack(putCursorPacked));
 
         reset(graph, boolfield);
@@ -132,7 +142,7 @@ void part::run (const std::string& file, RunOptions runOptions) {
                 break;
 
             case OptimizationStrat::Bail:
-                if (compileCount >= compileCountThreshold) {
+                if (compileCount >= compileCountNooptThreshold) {
                     generate(graph, staticBindings, bytes);
                 } else {
                     generateOpt(graph, staticBindings, boolfield, bytes);

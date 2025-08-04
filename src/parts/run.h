@@ -35,11 +35,13 @@ namespace part {
         : stackSize { 4096 }
         , optimizationStrat { OptimizationStrat::Bail }
         , startWithInterpreter { true }
+        , fallbackToInterpreter { true }
         {}
 
         int32_t stackSize;
         OptimizationStrat optimizationStrat;
         bool startWithInterpreter;
+        bool fallbackToInterpreter;
     };
 
     void run (const std::string& file, RunOptions runOptions = {});

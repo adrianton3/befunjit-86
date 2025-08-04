@@ -7,9 +7,16 @@ This is an educational/for-fun project - I do not recommend using this for any c
 I've made this project because 1) I wanted to learn how a JIT compiler works and 2) Befunge-93 was designed to be as hard as possible to write a compiler for due to its reflexive nature.
 Indeed, a fully AOT compiler is impractical so a JIT compiler is the next best thing.
 
-When run, befunjit-86 traverses a file, following `^<v>#_|?@` and creates a graph of "static" paths.\
+The befunjit-86 JIT traverses a file, following `^<v>#"_|?@` and creates a graph of "static" paths.\
 Machine code is generated for each path, after which they're linked against each other. Execution starts by calling into the generated machine code.
 The generated code for the `p` instruction writes back to the playfield and if it alters cells that are part of any static path then it triggers a re-compile.
+
+By default befunjit-86 starts by interpreting the first hundred or so steps. If the program did not terminate then
+the optimizing JIT is called and execution continues. The JIT is called every time the program self mutates up to
+some threshold; when this is reached the optimizations are turned off. If the program continues to self-mutate beyond
+another threhold then execution continues in the interpreter.
+
+The JIT outperforms the interpreter for programs that seldom self-mutate. Otherwise the interpreter is kicks in automatically.
 
 Take for example a hello world program:
 
@@ -94,18 +101,30 @@ cmake --build build-release/
 
 ### Testing
 
-Some options that help with debugging and are used by the test runner:
+Some options and subcommands that help with debugging and are used by the test runner:
 
-`b86 --read-playfield <befunge-source-file>`
+`b86 --never-optimize <befunge-source-file>`
+never uses the optimizing code generator.
+
+`b86 --always-optimize <befunge-source-file>`
+always uses the optimizing code generator.
+
+`b86 --no-interpreter <befunge-source-file>`
+only uses the jit.
+
+`b86 read-playfield <befunge-source-file>`
 reads a befunge source file and outputs the playfield as it's represented in memory.
 
-`b86 --find-pathlet <befunge-source-file>`
+`b86 find-pathlet <befunge-source-file>`
 finds the path starting from 0,0 going east and outputs it.
 
-`b86 --find-graph <befunge-source-file>`
+`b86 find-graph <befunge-source-file>`
 traverses the entire source and outputs all reachable paths.
 
-`b86 --run-line <befunge-source-file>`
+`b86 find-graph-optimize <befunge-source-file>`
+traverses the entire source, optimize and output all reachable paths.
+
+`b86 run-line <befunge-source-file>`
 runs a single line disregarding any of `^<v>#`.
 All lines should end with `@`; any of `_|?` should not be used as there is no graph and no paths.
 
