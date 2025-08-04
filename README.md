@@ -77,7 +77,7 @@ The _mandelbrot_ and _snowflake_ programs were found in the wild:
 The _count-down-mutate_ and _count-down-mutate-long_ programs were crafted to execute as slow as possible in the JIT.
 They were both designed to trigger as many recompilations as possible. 
 
-![perf stat -r 100 task-clock (msec)](https://github.com/user-attachments/assets/448051e7-5f08-4b67-92c4-66f0146fd627)
+![perf stat -r 100 task-clock (msec)](https://github.com/user-attachments/assets/1ca4880f-cabb-4832-a2c7-6f91932eb29d)
 
 For the two "natural" programs the JIT is ~23 times and ~15 times faster than the interpreter.
 The JIT with optimizations is ~2.8 and ~2.5 faster than without.
