@@ -10,22 +10,29 @@ fi
 cooldown=10
 
 
-echo "jit"
+echo "b86"
 sudo perf stat -r 100 ../cmake-build-release/b86 ../test/spec/run-more/$1.bf > /dev/null
 
 echo "cooldown ${cooldown}s"
 sleep $cooldown
 
 
-echo "jit, --always-opt"
+echo "b86 --always-opt"
 sudo perf stat -r 100 ../cmake-build-release/b86 --always-opt ../test/spec/run-more/$1.bf > /dev/null
 
 echo "cooldown ${cooldown}s"
 sleep $cooldown
 
 
-echo "jit --never-opt"
+echo "b86 --never-opt"
 sudo perf stat -r 100 ../cmake-build-release/b86 --never-opt ../test/spec/run-more/$1.bf > /dev/null
+
+echo "cooldown ${cooldown}s"
+sleep $cooldown
+
+
+echo "b86 --no-interp"
+sudo perf stat -r 100 ../cmake-build-release/b86 --no-interp ../test/spec/run-more/$1.bf > /dev/null
 
 echo "cooldown ${cooldown}s"
 sleep $cooldown

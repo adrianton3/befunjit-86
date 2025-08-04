@@ -15,7 +15,7 @@ void printUsage (char* argv[]) {
         " %s [--stack-size 4096] <bf-file>\n"
         "\n"
         "Test helpers:\n"
-        " %s [--never-opt] [--always-opt] [--no-interpreter] [--stack-size 4096] <bf-file>\n"
+        " %s [--never-opt] [--always-opt] [--no-interp] [--stack-size 4096] <bf-file>\n"
         "\n"
         " %s read-playfield <bf-file>\n"
         " %s find-pathlet <bf-file>\n"
@@ -78,7 +78,7 @@ int main (int argc, char* argv[]) {
             continue;
         }
 
-        if (strcmp(argv[index], "--no-interpreter") == 0) {
+        if (strcmp(argv[index], "--no-interp") == 0) {
             runOptions.startWithInterpreter = false;
             runOptions.fallbackToInterpreter = false;
             continue;

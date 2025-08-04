@@ -79,9 +79,10 @@ They were both designed to trigger as many recompilations as possible.
 
 ![perf stat -r 100 task-clock (msec)](https://github.com/user-attachments/assets/448051e7-5f08-4b67-92c4-66f0146fd627)
 
-For the two "natural" programs the JIT is ~21 times and ~15 times faster than the interpreter. The JIT with optimizations is ~2.5 faster than without.
+For the two "natural" programs the JIT is ~23 times and ~15 times faster than the interpreter.
+The JIT with optimizations is ~2.8 and ~2.5 faster than without.
 
-For the two JIT-breaking programs the interpreter is ~20 and ~34 times faster than the JIT.
+For the two JIT-breaking programs the external interpreter is ~21 and ~35 times faster than the JIT (pure, called with `--no-interp`).
 
 
 ### Building
@@ -103,13 +104,13 @@ cmake --build build-release/
 
 Some options and subcommands that help with debugging and are used by the test runner:
 
-`b86 --never-optimize <befunge-source-file>`
+`b86 --never-opt <befunge-source-file>`
 never uses the optimizing code generator.
 
-`b86 --always-optimize <befunge-source-file>`
+`b86 --always-opt <befunge-source-file>`
 always uses the optimizing code generator.
 
-`b86 --no-interpreter <befunge-source-file>`
+`b86 --no-interp <befunge-source-file>`
 only uses the jit.
 
 `b86 read-playfield <befunge-source-file>`
