@@ -37,6 +37,8 @@ add_executable(b86 src/main.cpp
         src/parts/runLine.h
         src/parts/run.cpp
         src/parts/run.h
+        src/core/Instr.cpp
+        src/core/Instr.h
         src/core/generateOpt.cpp
         src/core/generateOpt.h
         src/parts/findGraphOptimize.cpp
