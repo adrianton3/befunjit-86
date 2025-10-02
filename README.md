@@ -82,7 +82,7 @@ They were both designed to trigger as many recompilations as possible.
 For the two "natural" programs the JIT is ~23 times and ~15 times faster than the interpreter.
 The JIT with optimizations is ~2.8 and ~2.5 faster than without.
 
-For the two JIT-breaking programs the external interpreter is ~21 and ~35 times faster than the JIT (pure, called with `--no-interp`).
+For the two JIT-breaking programs the external interpreter is ~21 and ~35 times faster than the JIT (pure, called with `--no-interpreter`).
 
 
 ### Building

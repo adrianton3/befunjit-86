@@ -44,41 +44,17 @@ void translatePass (const std::vector<PathletEntry>& prev, std::vector<Instr>& n
     }
 }
 
-bool matchesUnsafe (const std::vector<Instr>& instructions, InstrType i0) {
-    return instructions.end()[-1].index() == static_cast<size_t>(i0);
+bool matchesAtUnsafe (const std::vector<Instr>& instructions, int offset, std::initializer_list<InstrType> instrTypes) {
+    for (size_t i = 0; i < instrTypes.size(); i++) {
+        if (instructions[offset + i].index() != static_cast<size_t>(instrTypes.begin()[i])) {
+            return false;
+        }
+    }
+    return true;
 }
 
-bool matchesUnsafe (const std::vector<Instr>& instructions, InstrType i0, InstrType i1) {
-    return instructions.end()[-2].index() == static_cast<size_t>(i0) &&
-        instructions.end()[-1].index() == static_cast<size_t>(i1);
-}
-
-bool matchesUnsafe (const std::vector<Instr>& instructions, InstrType i0, InstrType i1, InstrType i2) {
-    return instructions.end()[-3].index() == static_cast<size_t>(i0) &&
-        instructions.end()[-2].index() == static_cast<size_t>(i1) &&
-        instructions.end()[-1].index() == static_cast<size_t>(i2);
-}
-
-bool matchesUnsafe (const std::vector<Instr>& instructions, size_t index, InstrType i0) {
-    return instructions[index + 0].index() == static_cast<size_t>(i0);
-}
-
-bool matchesUnsafe (const std::vector<Instr>& instructions, size_t index, InstrType i0, InstrType i1) {
-    return instructions[index + 0].index() == static_cast<size_t>(i0) &&
-        instructions[index + 1].index() == static_cast<size_t>(i1);
-}
-
-bool matchesUnsafe (const std::vector<Instr>& instructions, size_t index, InstrType i0, InstrType i1, InstrType i2) {
-    return instructions[index + 0].index() == static_cast<size_t>(i0) &&
-        instructions[index + 1].index() == static_cast<size_t>(i1) &&
-        instructions[index + 2].index() == static_cast<size_t>(i2);
-}
-
-bool matchesUnsafe (const std::vector<Instr>& instructions, size_t index, InstrType i0, InstrType i1, InstrType i2, InstrType i3) {
-    return instructions[index + 0].index() == static_cast<size_t>(i0) &&
-        instructions[index + 1].index() == static_cast<size_t>(i1) &&
-        instructions[index + 2].index() == static_cast<size_t>(i2) &&
-        instructions[index + 3].index() == static_cast<size_t>(i3);
+bool matchesLastUnsafe (const std::vector<Instr>& instructions, std::initializer_list<InstrType> instrTypes) {
+    return matchesAtUnsafe(instructions, instructions.size() - instrTypes.size(), instrTypes);
 }
 
 InstrType getType (Instr instr) {
@@ -109,7 +85,7 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                     // (... + a) + b
                     // ... + (a + b)
                     // (a+b)+
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Add, InstrType::Push)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Add, InstrType::Push })) {
                         const auto result = getPushValue(next.end()[-3]) + getPushValue(next.end()[-1]);
                         next.pop_back();
                         setPushValue(next.end()[-2], result);
@@ -120,7 +96,7 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                     // (... + -a) + b
                     // ... + (-a + b)
                     // (b-a)+
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Sub, InstrType::Push)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Sub, InstrType::Push })) {
                         const auto result = getPushValue(next.end()[-1]) - getPushValue(next.end()[-3]);
                         next.pop_back();
                         setPushValue(next.end()[-2], result);
@@ -135,7 +111,7 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                     // (... + a) - b
                     // ... + (a - b)
                     // (a-b)+
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Add, InstrType::Push)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Add, InstrType::Push })) {
                         const auto result = getPushValue(next.end()[-3]) - getPushValue(next.end()[-1]);
                         next.pop_back();
                         setPushValue(next.end()[-2], result);
@@ -147,7 +123,7 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                     // ... + (-a + -b)
                     // ... - (a + b)
                     // (a+b)-
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Sub, InstrType::Push)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Sub, InstrType::Push })) {
                         const auto result = getPushValue(next.end()[-3]) - getPushValue(next.end()[-1]);
                         next.pop_back();
                         setPushValue(next.end()[-2], result);
@@ -161,7 +137,7 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                     // (... * a) * b
                     // ... * (a * b)
                     // (a*b)*
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Mul, InstrType::Push)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Mul, InstrType::Push })) {
                         const auto result = getPushValue(next.end()[-3]) * getPushValue(next.end()[-1]);
                         next.pop_back();
                         setPushValue(next.end()[-2], result);
@@ -177,14 +153,14 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
         if (stackSize >= 2) {
             switch (instrType) {
                 case InstrType::Add:
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Push)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Push })) {
                         const auto result = getPushValue(next.end()[-2]) + getPushValue(next.end()[-1]);
                         next.pop_back();
                         setPushValue(next.back(), result);
                         continue;
                     }
 
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Get2)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Get2 })) {
                         std::iter_swap(next.end() - 2, next.end() - 1);
                         next.push_back(instr);
                         continue;
@@ -193,20 +169,20 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                     break;
 
                 case InstrType::Sub:
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Push)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Push })) {
                         const auto result = getPushValue(next.end()[-2]) - getPushValue(next.end()[-1]);
                         next.pop_back();
                         setPushValue(next.back(), result);
                         continue;
                     }
 
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Swap) && getPushValue(next.end()[-2]) == 0) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Swap }) && getPushValue(next.end()[-2]) == 0) {
                         setPushValue(next.end()[-2], -1);
                         next.back() = Mul {};
                         continue;
                     }
 
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Get2)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Get2 })) {
                         std::iter_swap(next.end() - 2, next.end() - 1);
                         next.emplace_back(SubRev {});
                         continue;
@@ -215,14 +191,14 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                     break;
 
                 case InstrType::Mul:
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Push)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Push })) {
                         const auto product = getPushValue(next.end()[-2]) * getPushValue(next.end()[-1]);
                         next.pop_back();
                         std::get<Push>(next.back()).value = product;
                         continue;
                     }
 
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Get2)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Get2 })) {
                         std::iter_swap(next.end() - 2, next.end() - 1);
                         next.push_back(instr);
                         continue;
@@ -231,7 +207,7 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                     break;
 
                 case InstrType::Swap:
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Push)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Push })) {
                         std::iter_swap(next.end() - 2, next.end() - 1);
                         continue;
                     }
@@ -239,7 +215,7 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                     break;
 
                 case InstrType::Get:
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Push)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Push })) {
                         const auto x = getPushValue(next.end()[-2]);
                         const auto y = getPushValue(next.end()[-1]);
                         next.pop_back();
@@ -250,7 +226,7 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                     break;
 
                 case InstrType::Put:
-                    if (matchesUnsafe(next, InstrType::Push, InstrType::Push)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push, InstrType::Push })) {
                         const auto x = getPushValue(next.end()[-2]);
                         const auto y = getPushValue(next.end()[-1]);
                         next.pop_back();
@@ -267,7 +243,7 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
         if (stackSize >= 1) {
             switch (instrType) {
                 case InstrType::Add:
-                    if (matchesUnsafe(next, InstrType::Dup)) {
+                    if (matchesLastUnsafe(next, { InstrType::Dup })) {
                         next.end()[-1] = Push { 2 };
                         next.emplace_back(Mul {});
                         continue;
@@ -275,21 +251,21 @@ void stackPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
                     break;
 
                 case InstrType::Dup:
-                    if (matchesUnsafe(next, InstrType::Push)) {
+                    if (matchesLastUnsafe(next, { InstrType::Push })) {
                         next.push_back(next.back());
                         continue;
                     }
                     break;
 
                 case InstrType::Swap:
-                    if (matchesUnsafe(next, InstrType::Swap)) {
+                    if (matchesLastUnsafe(next, { InstrType::Swap })) {
                         next.pop_back();
                         continue;
                     }
                     break;
 
                 case InstrType::Drop:
-                    if (matchesUnsafe(next, InstrType::Dup)) {
+                    if (matchesLastUnsafe(next, { InstrType::Dup })) {
                         next.pop_back();
                         continue;
                     }
@@ -316,19 +292,19 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
             // !(b>a)
             // b<=a
             // ab(>=)
-            if (matchesUnsafe(prev, index, InstrType::Swap, InstrType::Comp, InstrType::Not) && getCompType(prev[index + 1]) == CompType::Gt) {
+            if (matchesAtUnsafe(prev, index, { InstrType::Swap, InstrType::Comp, InstrType::Not }) && getCompType(prev[index + 1]) == CompType::Gt) {
                 next.emplace_back(Comp { CompType::Gte });
                 index += 3;
                 continue;
             }
 
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Push, InstrType::Get)) {
+            if (matchesAtUnsafe(prev, index, { InstrType::Push, InstrType::Push, InstrType::Get })) {
                 next.emplace_back(Get2 { getPushValue(prev[index + 0]), getPushValue(prev[index + 1]) });
                 index += 3;
                 continue;
             }
 
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Push, InstrType::Put)) {
+            if (matchesAtUnsafe(prev, index, { InstrType::Push, InstrType::Push, InstrType::Put })) {
                 next.emplace_back(Put2 { getPushValue(prev[index + 0]), getPushValue(prev[index + 1]), std::get<Put>(prev[index + 2]).cursor });
                 index += 3;
                 continue;
@@ -336,31 +312,31 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
         }
 
         if (index < indexMaxM2) {
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Add)) {
+            if (matchesAtUnsafe(prev, index, { InstrType::Push, InstrType::Add })) {
                 next.emplace_back(Add1 { getPushValue(prev[index + 0]) });
                 index += 2;
                 continue;
             }
 
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Sub)) {
+            if (matchesAtUnsafe(prev, index, { InstrType::Push, InstrType::Sub })) {
                 next.emplace_back(Add1 { -getPushValue(prev[index + 0]) });
                 index += 2;
                 continue;
             }
 
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Mul)) {
+            if (matchesAtUnsafe(prev, index, { InstrType::Push, InstrType::Mul })) {
                 next.emplace_back(Mul1 { getPushValue(prev[index + 0]) });
                 index += 2;
                 continue;
             }
 
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Div)) {
+            if (matchesAtUnsafe(prev, index, { InstrType::Push, InstrType::Div })) {
                 next.emplace_back(Div1 { getPushValue(prev[index + 0]) });
                 index += 2;
                 continue;
             }
 
-            if (matchesUnsafe(prev, index, InstrType::Push, InstrType::Mod)) {
+            if (matchesAtUnsafe(prev, index, { InstrType::Push, InstrType::Mod })) {
                 next.emplace_back(Mod1 { getPushValue(prev[index + 0]) });
                 index += 2;
                 continue;
@@ -370,7 +346,7 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
             // b>a
             // a<b
             // ab(<)
-            if (matchesUnsafe(prev, index, InstrType::Swap, InstrType::Comp) && getCompType(prev[index + 1]) == CompType::Gt) {
+            if (matchesAtUnsafe(prev, index, { InstrType::Swap, InstrType::Comp }) && getCompType(prev[index + 1]) == CompType::Gt) {
                 next.emplace_back(Comp { CompType::Lt });
                 index += 2;
                 continue;
@@ -380,19 +356,19 @@ void finalPass (const std::vector<Instr>& prev, std::vector<Instr>& next) {
             // !(a>b)
             // a<=b
             // ab(<=)
-            if (matchesUnsafe(prev, index, InstrType::Comp, InstrType::Not) && getCompType(prev[index + 0]) == CompType::Gt) {
+            if (matchesAtUnsafe(prev, index, { InstrType::Comp, InstrType::Not }) && getCompType(prev[index + 0]) == CompType::Gt) {
                 next.emplace_back(Comp { CompType::Lte });
                 index += 2;
                 continue;
             }
 
-            if (matchesUnsafe(prev, index, InstrType::Swap, InstrType::Sub)) {
+            if (matchesAtUnsafe(prev, index, { InstrType::Swap, InstrType::Sub })) {
                 next.emplace_back(SubRev {});
                 index += 2;
                 continue;
             }
 
-            if (matchesUnsafe(prev, index, InstrType::Dup, InstrType::Mul)) {
+            if (matchesAtUnsafe(prev, index, { InstrType::Dup, InstrType::Mul })) {
                 next.emplace_back(Sqr {});
                 index += 2;
                 continue;
@@ -468,17 +444,17 @@ void ifPass (std::vector<Instr>& cur) {
     const auto indexMaxM3 = indexMaxM0 - 3;
     const auto indexMaxM4 = indexMaxM0 - 4;
 
-    if (!matchesUnsafe(cur, indexMaxM1, InstrType::If)) {
+    if (!matchesAtUnsafe(cur, indexMaxM1, { InstrType::If })) {
         return;
     }
 
-    if (matchesUnsafe(cur, indexMaxM2, InstrType::Comp)) {
+    if (matchesAtUnsafe(cur, indexMaxM2, { InstrType::Comp })) {
         const auto compType = getCompType(cur[indexMaxM2]);
 
-        if (matchesUnsafe(cur, indexMaxM3, InstrType::Push)) {
+        if (matchesAtUnsafe(cur, indexMaxM3, { InstrType::Push })) {
             const auto value = getPushValue(cur[indexMaxM3]);
 
-            if (matchesUnsafe(cur, indexMaxM4, InstrType::Dup)) {
+            if (matchesAtUnsafe(cur, indexMaxM4, { InstrType::Dup })) {
                 cur.erase(cur.end() - 3, cur.end()); // faster than resize ?? // this not really needed - codegen stops at if
                 cur[indexMaxM4] = Comp1If { compType, value, true };
                 return;
@@ -494,8 +470,8 @@ void ifPass (std::vector<Instr>& cur) {
         return;
     }
 
-    if (matchesUnsafe(cur, indexMaxM2, InstrType::Not)) {
-        if (matchesUnsafe(cur, indexMaxM3, InstrType::Dup)) {
+    if (matchesAtUnsafe(cur, indexMaxM2, { InstrType::Not })) {
+        if (matchesAtUnsafe(cur, indexMaxM3, { InstrType::Dup })) {
             cur.erase(cur.end() - 2, cur.end());
             cur[indexMaxM3] = NotIf { true };
             return;

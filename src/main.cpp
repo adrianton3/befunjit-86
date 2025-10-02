@@ -78,7 +78,7 @@ int main (int argc, char* argv[]) {
             continue;
         }
 
-        if (strcmp(argv[index], "--no-interp") == 0) {
+        if (strcmp(argv[index], "--no-interpreter") == 0) {
             runOptions.startWithInterpreter = false;
             runOptions.fallbackToInterpreter = false;
             continue;
