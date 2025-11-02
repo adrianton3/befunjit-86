@@ -129,6 +129,16 @@ InterpretResult interpret (Playfield& playfield, Cursor cursor, int64_t* stack, 
                 break;
             }
 
+            case '?': {
+                switch (std::rand() % 4) {
+                    case 0: cursor.directUp(); break;
+                    case 1: cursor.directLeft(); break;
+                    case 2: cursor.directDown(); break;
+                    default: cursor.directRight(); break;
+                }
+                break;
+            }
+
             case 'g': {
                 const auto x = stack[offset - 2];
                 const auto y = stack[offset - 1];

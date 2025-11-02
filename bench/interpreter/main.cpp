@@ -364,6 +364,16 @@ void run (const std::string& file, int32_t stackSize) {
                 break;
             }
 
+            case '?': {
+                switch (std::rand() % 4) {
+                    case 0: cursor.directUp(); break;
+                    case 1: cursor.directLeft(); break;
+                    case 2: cursor.directDown(); break;
+                    default: cursor.directRight(); break;
+                }
+                break;
+            }
+
             case 'g': {
                 stack[stackPointer - 2] = get(stack[stackPointer - 2], stack[stackPointer - 1]);
                 stackPointer--;
