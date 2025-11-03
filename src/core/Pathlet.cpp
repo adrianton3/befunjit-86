@@ -1,5 +1,7 @@
+#include <format>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 #include "Pathlet.h"
 
@@ -70,15 +72,12 @@ Pathlet findPathlet (const Playfield& playfield, Cursor cursor) {
 std::string stringify (const PathletEntry& entry) {
     std::string str;
 
-    str += "<";
-    str += stringify(entry.cursor.location);
+    str += std::format("<{}", stringify(entry.cursor.location));
 
     if (std::in_range<std::int32_t>(entry.value) && std::isprint(static_cast<int32_t>(entry.value))) {
-        str += ", '";
-        str += static_cast<char>(entry.value);
-        str += "'";
+        str += std::format(", '{}'", static_cast<char>(entry.value));
     } else {
-        str += ", X";
+        str += std::format(", ({})", entry.value);
     }
 
     if (entry.stringMode) {
@@ -95,21 +94,15 @@ std::string stringify (const Pathlet& pathlet) {
 
     if (pathlet.loopbackIndex >= 0) {
         str += "looping path\n";
-        str += "total length: ";
-        str += std::to_string(pathlet.entries.size());
-        str += "\n";
-        str += "pre-loop length: ";
-        str += std::to_string(pathlet.loopbackIndex);
-        str += "\n";
+        str += std::format("total length: {}\n", pathlet.entries.size());
+        str += std::format("pre-loop length: {}\n", pathlet.loopbackIndex);
     } else {
         str += "simple path\n";
-        str += "total length: ";
-        str += std::to_string(pathlet.entries.size());
-        str += "\n";
+        str += std::format("total length: {}\n", pathlet.entries.size());
     }
 
     for (const auto& entry : pathlet.entries) {
-        str += stringify(entry) + "\n";
+        str += std::format("{}\n", stringify(entry));
     }
 
     return str;

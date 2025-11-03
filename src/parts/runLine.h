@@ -1,6 +1,7 @@
 #ifndef RUNLINE_H
 #define RUNLINE_H
 
+#include <cstdint>
 #include <string>
 
 namespace bind::runLine {

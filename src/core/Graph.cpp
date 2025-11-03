@@ -1,4 +1,6 @@
+#include <format>
 #include <functional>
+#include <utility>
 
 #include "Path.h"
 
@@ -95,13 +97,10 @@ Graph findGraph (const Playfield& playfield, const Cursor& cursor) {
 std::string stringify (const Graph& graph) {
     std::string str;
 
-    str += "path count: ";
-    str += std::to_string(graph.map.size());
-    str += '\n';
+    str += std::format("path count: {}\n", graph.map.size());
 
     for (const auto& [_, path] : graph.map) {
-        str += stringify(path->entries[0].cursor.location);
-        str += ": ";
+        str += std::format("{}: ", stringify(path->entries[0].cursor.location));
 
         for (const auto& entry : path->entries) {
             if (std::in_range<std::int32_t>(entry.value) && std::isprint(static_cast<int32_t>(entry.value))) {
@@ -111,9 +110,7 @@ std::string stringify (const Graph& graph) {
             }
         }
 
-        str += " ";
-        str += stringify(path->entries.back().cursor.location);
-        str += '\n';
+        str += std::format(" {}\n", stringify(path->entries.back().cursor.location));
     }
 
     return str;

@@ -46,7 +46,7 @@ int64_t bind::runLine::readChar () {
 }
 
 int64_t bind::runLine::writeChar (int64_t value) {
-    printf("%c", static_cast<char>(value & 0xFF));
+    printf("%c", static_cast<char>(value & 0xff));
     return 0; // to force a call, otherwise it's a jump // needed? doesn't printf do the ret itself?
 }
 

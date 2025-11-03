@@ -1,3 +1,5 @@
+#include <format>
+
 #include "Cursor.h"
 
 
@@ -17,13 +19,5 @@ Cursor unpack (uint64_t packed) {
 }
 
 std::string stringify (const Cursor& cursor) {
-    std::string str;
-
-    str += '<';
-    str += stringify(cursor.location);
-    str += ", ";
-    str += stringify(cursor.increment);
-    str += '>';
-
-    return str;
+    return std::format("<{}, {}>", stringify(cursor.location), stringify(cursor.increment));
 }

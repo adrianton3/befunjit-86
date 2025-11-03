@@ -1,3 +1,4 @@
+#include <format>
 #include <utility>
 
 #include "Vec2.h"
@@ -31,15 +32,11 @@ std::string stringify (const Playfield& playfield) {
 
     if (!nonprintables.empty()) {
         str += '\n';
-        str += "playfield contains ";
-        str += std::to_string(nonprintables.size());
-        str += " value(s) that cannot be printed as chars:\n";
+
+        str += std::format("playfield contains {} value(s) that cannot be printed as chars:\n", nonprintables.size());
 
         for (const auto& nonprintable : nonprintables) {
-            str += stringify(nonprintable.location);
-            str += ": ";
-            str += std::to_string(nonprintable.value);
-            str += '\n';
+            str += std::format("{}: {}\n", stringify(nonprintable.location), nonprintable.value);
         }
     }
 
